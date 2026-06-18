@@ -9,11 +9,11 @@ type, draws a card for every item (using the supplied image, or generating one
 from the item's text when no image is available), packs the cards into texture
 atlases, and writes a self-contained bundle you can open in any browser.
 
-> **Status — Phase 1.** The build pipeline (DataFrame → bundle) is complete and
-> tested. The interactive viewer that renders the bundle — filterable facets, a
-> sorted grid, the histogram view, search, detail pane, and animated transitions
-> at 20k+ items — is **Phase 2** and currently ships as a placeholder. See
-> [`docs/superpowers/specs`](docs/superpowers/specs) for the design.
+The bundle ships with an interactive viewer baked in: open `index.html` and you
+get filterable facets, a sorted grid, a histogram view, search, a detail pane,
+and animated transitions that keep the whole collection centered and framed as
+you filter and sort. See [`docs/superpowers/specs`](docs/superpowers/specs) for
+the design.
 
 ## Install
 
@@ -84,19 +84,20 @@ pview build people.csv \
 # Built 10 items (1 generated, 0 image errors, 1 atlases) -> ./site
 ```
 
-It shows the pieces working together: every image is center-cropped to a square
-tile (so the varied aspect ratios demonstrate scaling), the one blank `photo`
-becomes a generated text card, and the columns infer as numeric/date/category
-facets. See [`example/README.md`](example/README.md) for details.
+It shows the pieces working together: every image is scaled to fit a square tile
+while keeping its aspect ratio (so the varied aspect ratios are letterboxed or
+pillarboxed rather than cropped), the one blank `photo` becomes a generated text
+card, and the columns infer as numeric/date/category facets. See
+[`example/README.md`](example/README.md) for details.
 
 ## How it works
 
 | Stage | What it does |
 |-------|--------------|
 | **Facet inference** | Classifies each column as `numeric`, `date`, `category`, or `text` (override with `facets=` / `--facet col=type`). |
-| **Image acquisition** | Loads each item's image from a local path or `http(s)` URL (retried once); falls back to a generated card on missing/blank/failed images — a bad image never aborts a build. |
-| **Card generation** | Renders the name plus selected attributes onto a tile with a deterministic, per-item background color. |
-| **Atlas packing** | Normalizes every card to a fixed tile size and packs them into atlas sheets for efficient GPU rendering. |
+| **Image acquisition** | Loads each item's image from a local path or `http(s)` URL (retried once), then scales it to fit a fixed square tile while preserving aspect ratio — uncovered margins use the item's background color; falls back to a generated card on missing/blank/failed images — a bad image never aborts a build. |
+| **Card generation** | Renders the name plus selected attributes onto a tile with a deterministic, per-item background color (the same color used for image margins). |
+| **Atlas packing** | Packs the fixed-size tiles into atlas sheets for efficient GPU rendering. |
 | **Bundle** | Emits `data.json` (facet schema + per-item records + atlas placements), the atlas PNGs, and the viewer — as a folder or a single HTML file. |
 
 ## Development

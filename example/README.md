@@ -50,8 +50,10 @@ HTML file with all assets inlined.
 - **Facet inference** — `age`/`salary` infer as numeric, `start_date` as date,
   and `department`/`city` are pinned to category via `--facet`.
 
-> Phase 1 builds the bundle; the interactive viewer is Phase 2 (placeholder for
-> now), so the clearest thing to inspect today is the atlas PNG above.
+> The build emits the interactive viewer alongside the data: open
+> `site/index.html` in a browser to filter, sort, search, and zoom the
+> collection. The atlas PNG above is still handy for eyeballing how every tile
+> was fit to its square at a glance.
 
 ## Regenerate the images
 
