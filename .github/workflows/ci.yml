@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install ".[dev,cli]"
+      - run: python -m pytest -q
+
+  viewer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+        working-directory: viewer
+      - run: npm test
+        working-directory: viewer
+      - run: npm run typecheck
+        working-directory: viewer
+      - run: npm run build
+        working-directory: viewer
+      # Staleness guard: the committed viewer_assets/ must equal a fresh build.
+      # If minified output ever proves non-deterministic across environments,
+      # relax this to: `test -s src/pview/viewer_assets/app.js` (+ app.css/index.html).
+      - name: viewer_assets is up to date
+        run: git diff --exit-code -- src/pview/viewer_assets
