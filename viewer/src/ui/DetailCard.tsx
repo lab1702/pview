@@ -3,6 +3,7 @@ import type { ReadonlySignal } from '@preact/signals'
 import type { Item } from '../core/bundle'
 import { resolveAtlasUrl } from '../scene/urls'
 import { generatedColor } from '../core/cardcolor'
+import { cardName } from '../core/cardname'
 
 interface Props {
   item: Item
@@ -24,7 +25,7 @@ export function DetailCard({ item, baseUrl, rect, nameKey, onClose }: Props) {
   const r = rect.value // read the signal here so only DetailCard re-renders per frame
   const width = Math.max(240, Math.min(r.size, 520))
   const opacity = Math.max(0, Math.min(1, (r.progress - 0.3) / 0.5))
-  const headerName = String(item.values[nameKey] ?? item.values[Object.keys(item.values)[0]] ?? '')
+  const headerName = cardName(item, nameKey)
 
   return (
     <div
