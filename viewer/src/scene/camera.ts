@@ -9,6 +9,15 @@ export interface Viewport {
   height: number
 }
 
+// Sane default zoom clamps (tunable). They keep zoom strictly positive, which
+// guards every divide-by-cam.zoom below against 0/negative/Infinity.
+export const MIN_ZOOM = 0.02
+export const MAX_ZOOM = 40
+
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.min(hi, Math.max(lo, v))
+}
+
 export function worldToScreen(cam: Camera, wx: number, wy: number, vp: Viewport) {
   return {
     x: (wx - cam.x) * cam.zoom + vp.width / 2,
@@ -29,11 +38,11 @@ export function panBy(cam: Camera, dxScreen: number, dyScreen: number): Camera {
 
 export function zoomAt(cam: Camera, sx: number, sy: number, factor: number, vp: Viewport): Camera {
   const before = screenToWorld(cam, sx, sy, vp)
-  const zoom = cam.zoom * factor
-  const after = {
-    x: (sx - vp.width / 2) / zoom + cam.x,
-    y: (sy - vp.height / 2) / zoom + cam.y,
-  }
+  const zoom = clamp(cam.zoom * factor, MIN_ZOOM, MAX_ZOOM)
+  // Compute the cursor's world point at the new zoom (keeping the OLD center),
+  // then shift the center so that point stays under the cursor on screen. At a
+  // clamp boundary `after` equals `before`, so the camera simply stops moving.
+  const after = screenToWorld({ ...cam, zoom }, sx, sy, vp)
   return { x: cam.x + (before.x - after.x), y: cam.y + (before.y - after.y), zoom }
 }
 

@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { worldToScreen, screenToWorld, panBy, zoomAt, fitToBounds } from '../src/scene/camera'
+import {
+  worldToScreen,
+  screenToWorld,
+  panBy,
+  zoomAt,
+  fitToBounds,
+  MIN_ZOOM,
+  MAX_ZOOM,
+} from '../src/scene/camera'
 
 const vp = { width: 800, height: 600 }
 
@@ -43,5 +51,17 @@ describe('camera', () => {
 
   it('fitToBounds handles empty bounds', () => {
     expect(fitToBounds({ w: 0, h: 0 }, vp).zoom).toBe(1)
+  })
+
+  it('clamps zoom to MAX_ZOOM and stops moving at the limit', () => {
+    const next = zoomAt({ x: 0, y: 0, zoom: MAX_ZOOM }, 600, 200, 2, vp)
+    expect(next.zoom).toBe(MAX_ZOOM)
+    expect(next.x).toBeCloseTo(0) // already at limit -> no shift
+    expect(next.y).toBeCloseTo(0)
+  })
+
+  it('clamps zoom to MIN_ZOOM when zooming out past it', () => {
+    const next = zoomAt({ x: 0, y: 0, zoom: MIN_ZOOM }, 600, 200, 0.5, vp)
+    expect(next.zoom).toBe(MIN_ZOOM)
   })
 })
