@@ -16,6 +16,10 @@ class Facet:
     max: Any = None
     values: list | None = None
 
+    def __post_init__(self):
+        if self.type not in VALID_TYPES:
+            raise ValueError(f"Invalid facet type {self.type!r}")
+
     def to_dict(self) -> dict:
         d: dict[str, Any] = {"name": self.name, "type": self.type}
         if self.min is not None:

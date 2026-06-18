@@ -65,3 +65,9 @@ def test_override_unknown_column_raises():
 def test_to_dict_omits_none_fields():
     f = Facet(name="x", type="text")
     assert f.to_dict() == {"name": "x", "type": "text"}
+
+
+def test_facet_rejects_invalid_type():
+    import pytest
+    with pytest.raises(ValueError):
+        Facet(name="x", type="bogus")
