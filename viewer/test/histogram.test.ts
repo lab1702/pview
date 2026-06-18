@@ -21,17 +21,14 @@ it('groups category items into one bar per value with counts', () => {
 })
 
 it('stacks items bottom-up within a bar', () => {
+  // barStep = tileSize+barGap = 150 ; step = tileSize+gap = 110
   const r = histogramLayout([0, 1, 2], items, catFacet, opts)
-  const barStep = 150 // tileSize + barGap
-  const step = 110 // tileSize + gap
   // bar 'a' center x = 0*150 + 50 = 50; first item (k=0) y = -0 - 50 = -50
   expect(r.targets.get(0)).toEqual({ x: 50, y: -50, scale: 1 })
   // second 'a' item (k=1) y = -(1*110) - 50 = -160
   expect(r.targets.get(1)).toEqual({ x: 50, y: -160, scale: 1 })
   // 'b' item bar index 1: x = 150 + 50 = 200, k=0
   expect(r.targets.get(2)).toEqual({ x: 200, y: -50, scale: 1 })
-  void barStep
-  void step
 })
 
 it('reports bar centers and bounds', () => {
@@ -48,4 +45,13 @@ it('buckets a numeric facet and omits ids not in orderedIds', () => {
   expect(r.targets.has(1)).toBe(false)
   expect(r.targets.has(0)).toBe(true)
   expect(r.targets.has(2)).toBe(true)
+})
+
+it('buckets a date facet (Date.parse + ms bucketing)', () => {
+  const dateFacet: Facet = { name: 'd', type: 'date', min: '2010-01-01', max: '2012-01-01' }
+  const dItems: Item[] = [item(0, { d: '2010-06-01' }), item(1, { d: '2011-06-01' })]
+  const r = histogramLayout([0, 1], dItems, dateFacet, opts)
+  expect(r.bars.length).toBeGreaterThan(0)
+  expect(r.targets.has(0)).toBe(true)
+  expect(r.targets.has(1)).toBe(true)
 })
