@@ -51,6 +51,13 @@ def build_with_summary(
         raise ValueError(f"name_col {name_col!r} not in DataFrame columns")
     if len(df) == 0:
         raise ValueError("DataFrame is empty")
+    # Duplicate headers make row[col] return a Series, which blows up downstream
+    # (_coerce's `pd.isna(v)` raises on an array). Fail early with a clear message
+    # instead. CSV/Excel readers de-dupe automatically; this guards the build(df)
+    # API, where a caller can pass a frame with repeated column names.
+    dupes = df.columns[df.columns.duplicated()].unique().tolist()
+    if dupes:
+        raise ValueError(f"Duplicate column names are not supported: {dupes}")
 
     card_fields = card_fields or [name_col]
     title = title or name_col

@@ -37,11 +37,17 @@ export function passesConstraint(item: Item, facet: Facet, constraint: Constrain
   }
   if (facet.type === 'numeric') {
     const { min, max } = constraint as { min: number; max: number }
+    // An item lacking a value for this facet does not satisfy a range
+    // constraint. Reject it explicitly: Number(null)/Number('') are 0, which
+    // would otherwise let a missing value slip through whenever 0 is in range.
+    if (value === null || value === undefined || value === '') return false
     const v = Number(value)
     return !(Number.isNaN(v) || v < min || v > max)
   }
   if (facet.type === 'date') {
     const { min, max } = constraint as { min: string; max: string }
+    // Likewise, a missing date does not satisfy a date-range constraint.
+    if (value === null || value === undefined || value === '') return false
     const v = String(value)
     return !(v < min || v > max)
   }

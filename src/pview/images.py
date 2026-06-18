@@ -49,9 +49,18 @@ def _default_font_path() -> str:
     return str(resources.files("pview").joinpath("assets/fonts/DejaVuSans.ttf"))
 
 
+# Per-item background palette. MUST stay byte-identical to the viewer's
+# `generatedColor` (viewer/src/core/cardcolor.ts): the same id has to yield the
+# same color in the generated atlas tile (here) and in the detail card (TS), or
+# the two diverge. Keep these three constants in sync across both files.
+_GOLDEN_RATIO_CONJUGATE = 0.61803398875
+_BG_LIGHTNESS = 0.45
+_BG_SATURATION = 0.55
+
+
 def _bg_color(item_id: int) -> tuple[int, int, int]:
-    hue = (item_id * 0.61803398875) % 1.0
-    r, g, b = colorsys.hls_to_rgb(hue, 0.45, 0.55)
+    hue = (item_id * _GOLDEN_RATIO_CONJUGATE) % 1.0
+    r, g, b = colorsys.hls_to_rgb(hue, _BG_LIGHTNESS, _BG_SATURATION)
     return int(r * 255), int(g * 255), int(b * 255)
 
 
@@ -93,6 +102,13 @@ def generate_card(
 
 
 _MAX_REDIRECTS = 5
+
+# Hardening against decompression bombs and oversized downloads. The pixel cap is
+# checked against the declared header dimensions *before* decoding (so a tiny file
+# claiming a huge canvas never gets expanded into memory); the byte cap bounds the
+# raw download. Both failures degrade to a generated card rather than crashing.
+_MAX_IMAGE_PIXELS = 50_000_000  # ~50 MP
+_MAX_FETCH_BYTES = 64 * 1024 * 1024  # 64 MiB
 
 
 def _public_ip_or_raise(url: str) -> str:
@@ -174,15 +190,26 @@ def _default_http_get(url: str) -> bytes:
         with httpx.Client(
             timeout=10.0, follow_redirects=False, transport=_pinned_transport(ip)
         ) as client:
-            resp = client.get(current)
-        if resp.is_redirect:
-            location = resp.headers.get("location")
-            if not location:
-                break
-            current = str(resp.url.join(location))
-            continue
-        resp.raise_for_status()
-        return resp.content
+            with client.stream("GET", current) as resp:
+                if resp.is_redirect:
+                    location = resp.headers.get("location")
+                    if not location:
+                        break
+                    current = str(resp.url.join(location))
+                    continue
+                resp.raise_for_status()
+                # Stream with a hard cap so a hostile endpoint can't exhaust
+                # memory/disk with an unbounded (or chunked, never-ending) body.
+                chunks: list[bytes] = []
+                total = 0
+                for chunk in resp.iter_bytes():
+                    total += len(chunk)
+                    if total > _MAX_FETCH_BYTES:
+                        raise ValueError(
+                            f"image exceeds {_MAX_FETCH_BYTES}-byte limit: {current!r}"
+                        )
+                    chunks.append(chunk)
+                return b"".join(chunks)
     raise ValueError(f"too many redirects fetching {url!r}")
 
 
@@ -230,6 +257,15 @@ def load_tile(
     cache_dir: Path | None = None,
     http_get: Callable[[str], bytes] | None = None,
 ) -> LoadedImage:
+    """Resolve an image column value to a tile.
+
+    Security note: a non-URL ``value`` is treated as a local filesystem path and
+    read directly, and its bytes are embedded into the published bundle. The CSV
+    is therefore trusted input — a value like ``/etc/passwd`` would be read and
+    served. Run pview only on CSVs you trust; for untrusted input, inject an
+    ``http_get`` and confine image columns to URLs. Remote URLs go through the
+    SSRF guard (``_public_ip_or_raise``); local paths do not.
+    """
     import io
 
     blank = value is None or (isinstance(value, str) and value.strip() == "")
@@ -244,6 +280,11 @@ def load_tile(
                 raw = Path(sval).read_bytes()
                 local_path = sval
             img = Image.open(io.BytesIO(raw))
+            # Reject decompression bombs on the declared size, before decoding.
+            if img.width * img.height > _MAX_IMAGE_PIXELS:
+                raise ValueError(
+                    f"image {img.width}x{img.height} exceeds {_MAX_IMAGE_PIXELS}-pixel limit"
+                )
             img.load()
             return LoadedImage(
                 tile=_normalize(img, tile_size, item_id),

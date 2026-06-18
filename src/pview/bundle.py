@@ -105,7 +105,7 @@ def write_bundle(
             f"<script>{app_js}</script></body></html>"
         )
         out_path = Path(out_dir)
-        if out_path.suffix != ".html":
+        if out_path.suffix.lower() != ".html":
             out_path.mkdir(parents=True, exist_ok=True)
             out_path = out_path / "index.html"
         else:

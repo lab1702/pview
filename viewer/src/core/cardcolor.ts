@@ -18,9 +18,18 @@ function hlsToRgb(h: number, l: number, s: number): [number, number, number] {
   return [channel(h + 1 / 3), channel(h), channel(h - 1 / 3)]
 }
 
+// The per-item background palette. MUST stay byte-identical to the Python tile
+// generator (`_bg_color`/`_GOLDEN_RATIO_CONJUGATE` in src/pview/images.py), or a
+// card's atlas tile and its detail-card background will diverge: the same id has
+// to yield the same color on both sides. `hlsToRgb` above is a port of Python's
+// colorsys.hls_to_rgb; keep the lightness/saturation here in sync with that file.
+const GOLDEN_RATIO_CONJUGATE = 0.61803398875
+const BG_LIGHTNESS = 0.45
+const BG_SATURATION = 0.55
+
 export function generatedColor(id: number): string {
-  const hue = (id * 0.61803398875) % 1
-  const [r, g, b] = hlsToRgb(hue, 0.45, 0.55)
+  const hue = (id * GOLDEN_RATIO_CONJUGATE) % 1
+  const [r, g, b] = hlsToRgb(hue, BG_LIGHTNESS, BG_SATURATION)
   const hex = (v: number) => v.toString(16).padStart(2, '0')
   return `#${hex(r)}${hex(g)}${hex(b)}`
 }

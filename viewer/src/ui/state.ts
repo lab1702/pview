@@ -28,14 +28,19 @@ export function createViewerState(bundle: Bundle): ViewerState {
   const histogramFacet = signal<string | null>(bucketable[0]?.name ?? null)
   const selectedId = signal<number | null>(null)
   const textFacetNames = bundle.facets.filter((f) => f.type === 'text').map((f) => f.name)
+  // Built once; the item set is immutable for a bundle. Reused by the query pass
+  // below instead of rescanning all items on every keystroke.
+  const byId = new Map(bundle.items.map((it) => [it.id, it]))
 
   const visibleIds = computed(() => {
     const filtered = applyFilters(bundle.items, bundle.facets, filter.value)
     const q = query.value
     if (q.trim() === '') return filtered
+    // Only re-test the already-filtered set, not the whole corpus.
     const out = new Set<number>()
-    for (const item of bundle.items) {
-      if (filtered.has(item.id) && matchQuery(item, q, textFacetNames)) out.add(item.id)
+    for (const id of filtered) {
+      const item = byId.get(id)
+      if (item && matchQuery(item, q, textFacetNames)) out.add(id)
     }
     return out
   })
