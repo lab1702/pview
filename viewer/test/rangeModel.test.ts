@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { it, expect } from 'vitest'
 import { valueToFraction, fractionToValue, clampLow, clampHigh } from '../src/core/rangeModel'
 
 it('maps value to fraction', () => {
