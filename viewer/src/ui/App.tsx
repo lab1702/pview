@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'preact/hooks'
 import { effect } from '@preact/signals'
 import type { Bundle } from '../core/bundle'
 import { gridLayout } from '../core/layout/grid'
+import { histogramLayout } from '../core/layout/histogram'
 import { Scene } from '../scene/Scene'
 import { createViewerState } from './state'
 import { Sidebar } from './Sidebar'
@@ -28,28 +29,46 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
     }
     const columns = Math.max(1, Math.ceil(Math.sqrt(bundle.items.length)))
     const gap = Math.round(bundle.tileSize * 0.08)
+    const barGap = Math.round(bundle.tileSize * 0.5)
+
+    // Compute the active layout, push bars to the scene, return targets + bounds.
+    const computeLayout = (): { targets: Map<number, { x: number; y: number; scale: number }>; bounds: { w: number; h: number } } => {
+      if (state.view.value === 'histogram' && state.histogramFacet.value) {
+        const facet = bundle.facets.find((f) => f.name === state.histogramFacet.value)
+        if (facet) {
+          const r = histogramLayout(state.sortedVisible.value, bundle.items, facet, {
+            tileSize: bundle.tileSize,
+            gap,
+            barGap,
+          })
+          scene.setBars(r.bars)
+          return { targets: r.targets, bounds: r.bounds }
+        }
+      }
+      scene.setBars([])
+      const g = gridLayout(state.sortedVisible.value, { columns, tileSize: bundle.tileSize, gap })
+      return { targets: g.targets, bounds: g.bounds }
+    }
+
+    let lastMode = ''
 
     void (async () => {
       try {
         await scene.mount(host)
         if (disposed) return teardown()
         await scene.setSprites(bundle, baseUrl)
-        // initial instant layout + frame
-        const first = gridLayout(state.sortedVisible.value, {
-          columns,
-          tileSize: bundle.tileSize,
-          gap,
-        })
+        const first = computeLayout()
         scene.setLayout(first.targets, new Set(state.visibleIds.value), false)
         scene.frame(first.bounds)
-        // reactive re-layout on filter/sort/search changes
+        lastMode = `${state.view.value}:${state.histogramFacet.value}`
         disposeEffect = effect(() => {
-          const { targets } = gridLayout(state.sortedVisible.value, {
-            columns,
-            tileSize: bundle.tileSize,
-            gap,
-          })
-          scene.setLayout(targets, new Set(state.visibleIds.value))
+          const r = computeLayout()
+          scene.setLayout(r.targets, new Set(state.visibleIds.value))
+          const mode = `${state.view.value}:${state.histogramFacet.value}`
+          if (mode !== lastMode) {
+            scene.frame(r.bounds)
+            lastMode = mode
+          }
         })
       } catch (err) {
         teardown()
