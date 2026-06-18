@@ -23,3 +23,15 @@ it('requires all tokens to match', () => {
   expect(matchQuery(item, 'ada programmer', textFacets)).toBe(true)
   expect(matchQuery(item, 'ada nope', textFacets)).toBe(false)
 })
+
+it('matches across diacritics in both directions', () => {
+  const accented: Item = {
+    id: 1,
+    values: { name: 'Pokémon', note: 'café au lait' },
+    atlas: 0,
+    rect: [0, 0, 1, 1],
+    detail: null,
+  }
+  expect(matchQuery(accented, 'pokemon', textFacets)).toBe(true) // ASCII query, accented data
+  expect(matchQuery(accented, 'café', textFacets)).toBe(true) // accented query still works
+})

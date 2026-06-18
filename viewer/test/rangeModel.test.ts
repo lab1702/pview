@@ -20,6 +20,11 @@ it('snaps to step', () => {
 })
 
 it('clamps handles so they cannot cross', () => {
-  expect(clampLow(8, 5)).toBe(5) // low cannot exceed high
-  expect(clampHigh(3, 5)).toBe(5) // high cannot fall below low
+  expect(clampLow(8, 5, 0)).toBe(5) // low cannot exceed high
+  expect(clampHigh(3, 5, 10)).toBe(5) // high cannot fall below low
+})
+
+it('clamps handles to the facet bounds', () => {
+  expect(clampLow(-5, 5, 0)).toBe(0) // low cannot go below min
+  expect(clampHigh(15, 5, 10)).toBe(10) // high cannot exceed max
 })

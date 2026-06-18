@@ -139,6 +139,7 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
           baseUrl={baseUrl}
           rect={focusRect}
           nameKey={bundle.cardFields[0] ?? ''}
+          fieldOrder={bundle.facets.map((f) => f.name)}
           onClose={() => (state.selectedId.value = null)}
         />
       )}

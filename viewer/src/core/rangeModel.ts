@@ -10,10 +10,14 @@ export function fractionToValue(fraction: number, min: number, max: number, step
   return Math.min(max, Math.max(min, v))
 }
 
-export function clampLow(low: number, high: number): number {
-  return Math.min(low, high)
+// Bound a handle to the facet range AND keep it on the correct side of the
+// other handle: the low handle stays in [min, high], the high handle in
+// [low, max]. Without the min/max clamp, keyboard nudges could push a value
+// past the data range (off the track, recoverable only by many key presses).
+export function clampLow(low: number, high: number, min: number): number {
+  return Math.min(Math.max(low, min), high)
 }
 
-export function clampHigh(high: number, low: number): number {
-  return Math.max(high, low)
+export function clampHigh(high: number, low: number, max: number): number {
+  return Math.max(Math.min(high, max), low)
 }

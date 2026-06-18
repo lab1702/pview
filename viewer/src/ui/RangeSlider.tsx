@@ -17,9 +17,9 @@ export function RangeSlider({ min, max, low, high, step = 1, onChange, formatLab
 
   const nudge = (which: 'low' | 'high', delta: number) => {
     if (which === 'low') {
-      onChange(clampLow(low + delta, high), high)
+      onChange(clampLow(low + delta, high, min), high)
     } else {
-      onChange(low, clampHigh(high + delta, low))
+      onChange(low, clampHigh(high + delta, low, max))
     }
   }
 
@@ -39,8 +39,8 @@ export function RangeSlider({ min, max, low, high, step = 1, onChange, formatLab
     const rect = track.getBoundingClientRect()
     if (rect.width === 0) return
     const v = fractionToValue((clientX - rect.left) / rect.width, min, max, step)
-    if (which === 'low') onChange(clampLow(v, high), high)
-    else onChange(low, clampHigh(v, low))
+    if (which === 'low') onChange(clampLow(v, high, min), high)
+    else onChange(low, clampHigh(v, low, max))
   }
 
   const onPointerDown = (which: 'low' | 'high') => (e: PointerEvent) => {

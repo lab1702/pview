@@ -14,6 +14,7 @@ export async function buildSprites(
   const sources = await loadAtlasSources(bundle.atlases, baseUrl, loadTexture)
   const sprites = new Map<number, Sprite>()
   const nameKey = bundle.cardFields[0] ?? ''
+  const fieldOrder = bundle.facets.map((f) => f.name)
   for (const item of bundle.items) {
     const source = sources[item.atlas]
     if (!source) continue
@@ -23,7 +24,7 @@ export async function buildSprites(
     sprite.anchor.set(0.5)
     // Imageless cards (detail === null) are generated tiles that already paint
     // the name into the artwork, so an overlay would just double it up.
-    if (item.detail !== null) addNameLabel(sprite, cardName(item, nameKey), bundle.tileSize)
+    if (item.detail !== null) addNameLabel(sprite, cardName(item, nameKey, fieldOrder), bundle.tileSize)
     world.addChild(sprite)
     sprites.set(item.id, sprite)
   }

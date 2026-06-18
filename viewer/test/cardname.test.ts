@@ -25,3 +25,11 @@ it('falls back to the first value when nameKey is missing', () => {
 it('returns an empty string when there are no values', () => {
   expect(cardName(item({}), 'name')).toBe('')
 })
+
+it('uses the supplied field order for the fallback, not JS key order', () => {
+  // Object.keys hoists integer-like keys ("2020") ahead of string keys, so
+  // without an explicit order the fallback would wrongly pick "2020".
+  const it = item({ '2020': 'x', label: 'Ada' })
+  expect(cardName(it, 'missing', ['label', '2020'])).toBe('Ada')
+  expect(cardName(it, 'missing')).toBe('x') // documents the unordered hazard
+})

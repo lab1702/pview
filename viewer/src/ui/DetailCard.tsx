@@ -10,10 +10,11 @@ interface Props {
   baseUrl: string
   rect: ReadonlySignal<{ cx: number; cy: number; size: number; progress: number }>
   nameKey: string
+  fieldOrder?: string[]
   onClose: () => void
 }
 
-export function DetailCard({ item, baseUrl, rect, nameKey, onClose }: Props) {
+export function DetailCard({ item, baseUrl, rect, nameKey, fieldOrder, onClose }: Props) {
   const [imgError, setImgError] = useState(false)
   // Reset the broken-image flag when a different item is shown — the parent
   // patches one DetailCard instance across selections, so a prior error must
@@ -25,7 +26,7 @@ export function DetailCard({ item, baseUrl, rect, nameKey, onClose }: Props) {
   const r = rect.value // read the signal here so only DetailCard re-renders per frame
   const width = Math.max(240, Math.min(r.size, 520))
   const opacity = Math.max(0, Math.min(1, (r.progress - 0.3) / 0.5))
-  const headerName = cardName(item, nameKey)
+  const headerName = cardName(item, nameKey, fieldOrder)
 
   return (
     <div

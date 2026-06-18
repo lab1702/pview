@@ -23,7 +23,7 @@ def _parse_facets(pairs: list[str] | None) -> dict[str, str]:
         if "=" not in pair:
             raise ValueError(f"--facet must be col=type, got {pair!r}")
         col, ftype = pair.split("=", 1)
-        out[col] = ftype
+        out[col.strip()] = ftype.strip()
     return out
 
 
@@ -46,7 +46,11 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         df = _read_table(Path(args.input))
-        card_fields = args.card_fields.split(",") if args.card_fields else None
+        card_fields = (
+            [c.strip() for c in args.card_fields.split(",") if c.strip()]
+            if args.card_fields
+            else None
+        )
         _, summary = build_with_summary(
             df,
             name_col=args.name_col,

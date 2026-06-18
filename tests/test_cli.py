@@ -27,6 +27,21 @@ def test_cli_build_folder(tmp_path):
     assert data["cardFields"] == ["name", "age"]
 
 
+def test_cli_card_fields_are_trimmed(tmp_path):
+    out = tmp_path / "site"
+    rc = main(
+        [
+            "build", str(_csv(tmp_path)),
+            "--name-col", "name",
+            "--card-fields", " name , age ",  # surrounding whitespace
+            "--out", str(out),
+        ]
+    )
+    assert rc == 0
+    data = json.loads((out / "data.json").read_text())
+    assert data["cardFields"] == ["name", "age"]
+
+
 def test_cli_facet_override(tmp_path):
     out = tmp_path / "site"
     rc = main(
