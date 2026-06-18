@@ -46,3 +46,15 @@ def test_cli_facet_override(tmp_path):
 def test_cli_missing_file_returns_error(tmp_path):
     rc = main(["build", str(tmp_path / "nope.csv"), "--name-col", "name", "--out", str(tmp_path / "o")])
     assert rc != 0
+
+
+def test_cli_malformed_facet_returns_error(tmp_path):
+    rc = main(
+        [
+            "build", str(_csv(tmp_path)),
+            "--name-col", "name",
+            "--facet", "age",          # missing '=type'
+            "--out", str(tmp_path / "o"),
+        ]
+    )
+    assert rc != 0

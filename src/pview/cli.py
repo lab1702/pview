@@ -36,7 +36,7 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--name-col", required=True)
     b.add_argument("--image-col", default=None)
     b.add_argument("--card-fields", default=None, help="comma-separated")
-    b.add_argument("--facet", action="append", default=[], help="col=type (repeatable)")
+    b.add_argument("--facet", action="append", default=None, help="col=type (repeatable)")
     b.add_argument("--title", default=None)
     b.add_argument("--out", required=True)
     b.add_argument("--single-file", action="store_true")
