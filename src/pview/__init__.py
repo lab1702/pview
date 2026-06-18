@@ -72,7 +72,7 @@ def build_with_summary(
                     img_value = None
             except (TypeError, ValueError):
                 pass
-        tile, generated, err = load_tile(
+        loaded = load_tile(
             img_value,
             item_id=pos,
             name=name,
@@ -81,12 +81,12 @@ def build_with_summary(
             cache_dir=cache_path,
             http_get=http_get,
         )
-        tiles.append(tile)
-        if generated:
+        tiles.append(loaded.tile)
+        if loaded.generated:
             n_generated += 1
-        if err is not None:
+        if loaded.error is not None:
             n_errors += 1
-            logger.warning("item %d image failed: %s", pos, err)
+            logger.warning("item %d image failed: %s", pos, loaded.error)
 
         values = {c: _coerce(row[c]) for c in df.columns if c != image_col}
         items.append({"id": pos, "values": values})
