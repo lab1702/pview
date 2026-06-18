@@ -33,3 +33,12 @@ it('renders all attribute rows and a working close button', () => {
   fireEvent.click(screen.getByRole('button', { name: /close/i }))
   expect(onClose).toHaveBeenCalled()
 })
+
+it('falls back to the generated header when the detail image errors', () => {
+  render(<DetailCard item={item('detail/0.png')} baseUrl="./" rect={rect} onClose={() => {}} />)
+  const img = document.querySelector('img') as HTMLImageElement
+  expect(img).not.toBeNull()
+  fireEvent.error(img)
+  expect(document.querySelector('img')).toBeNull()
+  expect(document.querySelector('.pview-detail-generated')).not.toBeNull()
+})

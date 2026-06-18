@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import type { Item } from '../core/bundle'
 import { resolveAtlasUrl } from '../scene/urls'
 import { generatedColor } from '../core/cardcolor'
@@ -12,6 +12,12 @@ interface Props {
 
 export function DetailCard({ item, baseUrl, rect, onClose }: Props) {
   const [imgError, setImgError] = useState(false)
+  // Reset the broken-image flag when a different item is shown — the parent
+  // patches one DetailCard instance across selections, so a prior error must
+  // not suppress the next item's image.
+  useEffect(() => {
+    setImgError(false)
+  }, [item.id])
   const width = Math.max(240, Math.min(rect.size, 520))
   const opacity = Math.max(0, Math.min(1, (rect.progress - 0.3) / 0.5))
   const headerName = String(item.values[Object.keys(item.values)[0]] ?? '')
@@ -32,7 +38,7 @@ export function DetailCard({ item, baseUrl, rect, onClose }: Props) {
       </button>
       <div class="pview-detail-image">
         {item.detail && !imgError ? (
-          <img src={resolveAtlasUrl(item.detail, baseUrl)} alt="" onError={() => setImgError(true)} />
+          <img src={resolveAtlasUrl(item.detail, baseUrl)} alt={headerName} onError={() => setImgError(true)} />
         ) : (
           <div class="pview-detail-generated" style={{ background: generatedColor(item.id) }}>
             {headerName}
