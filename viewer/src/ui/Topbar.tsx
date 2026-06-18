@@ -34,6 +34,7 @@ export function Topbar({ bundle, state }: { bundle: Bundle; state: ViewerState }
         </select>
         <button
           type="button"
+          aria-label={`Sort direction: ${state.sort.value.dir === 'asc' ? 'ascending' : 'descending'}`}
           onClick={() => {
             state.sort.value = {
               ...state.sort.value,

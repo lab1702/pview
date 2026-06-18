@@ -35,11 +35,11 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
         if (disposed) return teardown()
         await scene.setSprites(bundle, baseUrl)
         // initial instant layout + frame
-        const all = new Set(bundle.items.map((it) => it.id))
-        const first = gridLayout(
-          state.sortedVisible.value,
-          { columns, tileSize: bundle.tileSize, gap },
-        )
+        const first = gridLayout(state.sortedVisible.value, {
+          columns,
+          tileSize: bundle.tileSize,
+          gap,
+        })
         scene.setLayout(first.targets, new Set(state.visibleIds.value), false)
         scene.frame(first.bounds)
         // reactive re-layout on filter/sort/search changes
@@ -51,7 +51,6 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
           })
           scene.setLayout(targets, new Set(state.visibleIds.value))
         })
-        void all
       } catch (err) {
         teardown()
         const div = document.createElement('div')

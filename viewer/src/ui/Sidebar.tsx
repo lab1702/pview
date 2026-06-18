@@ -28,7 +28,7 @@ export function Sidebar({ bundle, state }: { bundle: Bundle; state: ViewerState 
         Clear all
       </button>
       {filterable.map((f) => (
-        <div class="pview-facet">
+        <div class="pview-facet" key={f.name}>
           <h3>{f.name}</h3>
           {f.type === 'category' && (
             <CategoryFilter facet={f} state={state} onToggle={(v) => toggleCategory(f.name, v)} />
@@ -59,7 +59,7 @@ function CategoryFilter({
   return (
     <ul class="pview-checkboxes">
       {facet.values.map((v) => (
-        <li>
+        <li key={v}>
           <label>
             <input type="checkbox" checked={selected.has(v)} onChange={() => onToggle(v)} />
             {v} ({counts?.get(v) ?? 0})

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest'
+import { it, expect, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/preact'
 import { Topbar } from '../src/ui/Topbar'
 import { createViewerState } from '../src/ui/state'
