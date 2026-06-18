@@ -34,3 +34,12 @@ def test_empty_input():
     atlases, placements = pack([], tile_size=64, sheet_size=128)
     assert atlases == []
     assert placements == []
+
+
+def test_tiles_are_pasted_at_their_placements():
+    # tile i has solid color (i, i, i, 255); verify each landed at its rect
+    atlases, placements = pack(_tiles(4, 64), tile_size=64, sheet_size=128)
+    assert atlases[0].getpixel((0, 0)) == (0, 0, 0, 255)      # tile 0 -> (0,0)
+    assert atlases[0].getpixel((64, 0)) == (1, 1, 1, 255)     # tile 1 -> (64,0)
+    assert atlases[0].getpixel((0, 64)) == (2, 2, 2, 255)     # tile 2 -> (0,64)
+    assert atlases[0].getpixel((64, 64)) == (3, 3, 3, 255)    # tile 3 -> (64,64)
