@@ -94,8 +94,8 @@ def write_bundle(
             else:
                 item["detail"] = None
         data = _data_dict(title, facets, items, card_fields, tile_size, atlas_meta)
-        app_js = _escape_script(viewer.joinpath("app.js").read_text())
-        app_css = _escape_style(viewer.joinpath("app.css").read_text())
+        app_js = _escape_script(viewer.joinpath("app.js").read_text(encoding="utf-8"))
+        app_css = _escape_style(viewer.joinpath("app.css").read_text(encoding="utf-8"))
         payload = json.dumps(data).replace("<", "\\u003c")
         html = (
             "<!doctype html><html><head><meta charset='utf-8'><title>"
@@ -110,7 +110,7 @@ def write_bundle(
             out_path = out_path / "index.html"
         else:
             out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(html)
+        out_path.write_text(html, encoding="utf-8")
         return out_path
 
     out = Path(out_dir)
@@ -139,5 +139,5 @@ def write_bundle(
             item["detail"] = None
 
     data = _data_dict(title, facets, items, card_fields, tile_size, atlas_meta)
-    (out / "data.json").write_text(json.dumps(data, indent=2))
+    (out / "data.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
     return out

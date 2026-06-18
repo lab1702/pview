@@ -95,6 +95,16 @@ def test_single_file_inlines_detail_as_data_uri(tmp_path):
     assert data["items"][1]["detail"] is None
 
 
+def test_single_file_non_ascii_title_is_utf8(tmp_path):
+    # The bundle must be written as UTF-8 regardless of the host's default
+    # encoding, or a non-ASCII title aborts the build on e.g. Windows cp1252.
+    args = _args(tmp_path)
+    args["single_file"] = True
+    args["title"] = "人物 — café 🎴"
+    out = write_bundle(**args)
+    assert args["title"] in out.read_bytes().decode("utf-8")
+
+
 def test_escape_script_neutralizes_closing_tag():
     from pview.bundle import _escape_script
 

@@ -47,12 +47,21 @@ def _build_facet(name: str, series: pd.Series, forced: str | None, category_thre
 
     if ftype == "numeric":
         s = pd.to_numeric(series, errors="coerce").dropna()
+        # No usable values (empty column, or a forced type the data can't satisfy)
+        # would yield NaN bounds, which serialize to invalid JSON and break the
+        # viewer on load. Degrade to a plain text facet instead.
+        if s.empty:
+            return Facet(name, "text")
         return Facet(name, "numeric", min=_num(s.min()), max=_num(s.max()))
     if ftype == "date":
         s = pd.to_datetime(series, errors="coerce").dropna()
+        if s.empty:
+            return Facet(name, "text")
         return Facet(name, "date", min=s.min().date().isoformat(), max=s.max().date().isoformat())
     if ftype == "category":
         vals = sorted(series.dropna().astype(str).unique().tolist())
+        if not vals:
+            return Facet(name, "text")
         return Facet(name, "category", values=vals)
     return Facet(name, "text")
 
