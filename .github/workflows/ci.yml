@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install ".[dev,cli]"
+      - run: python -m pytest -q
+
+  viewer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+        working-directory: viewer
+      - run: npm test
+        working-directory: viewer
+      - run: npm run typecheck
+        working-directory: viewer
+      - run: npm run build
+        working-directory: viewer
+      # Staleness guard: the committed viewer_assets/ must equal a fresh build.
+      # `git status --porcelain` also catches added/removed files (e.g. a new chunk),
+      # which a plain `git diff` would miss. If minified output ever proves
+      # non-deterministic across environments, relax to a presence check:
+      # `test -s src/pview/viewer_assets/app.js` (+ app.css/index.html).
+      - name: viewer_assets is up to date
+        run: |
+          if [ -n "$(git status --porcelain -- src/pview/viewer_assets)" ]; then
+            echo "viewer_assets is stale — run 'npm run build' in viewer/ and commit the result:"
+            git status --porcelain -- src/pview/viewer_assets
+            exit 1
+          fi

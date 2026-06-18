@@ -119,7 +119,7 @@ export class Scene {
     for (const t of this.labels) t.visible = false
     bars.forEach((bar, i) => {
       const t = this.labels[i]
-      t.text = `${bar.label}\n${bar.count}`
+      t.text = `${bar.label}\n${bar.count.toLocaleString()}`
       t.position.set(bar.x, 8)
       t.visible = true
     })

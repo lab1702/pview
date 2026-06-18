@@ -4,6 +4,7 @@ import base64
 import html as html_lib
 import io
 import json
+import re
 import shutil
 from importlib import resources
 from pathlib import Path
@@ -11,6 +12,18 @@ from pathlib import Path
 from PIL import Image
 
 from .facets import Facet
+
+
+def _escape_script(js: str) -> str:
+    # Prevent a minified bundle's `</script>` substring from closing the inline
+    # <script> tag early. `<\/script` is identical at runtime (in a JS string/
+    # regex `<\/` decodes to `</`; it cannot occur as JS syntax elsewhere). The
+    # captured group preserves the matched case so the bytes are otherwise intact.
+    return re.sub(r"</(script)", r"<\\/\1", js, flags=re.IGNORECASE)
+
+
+def _escape_style(css: str) -> str:
+    return re.sub(r"</(style)", r"<\\/\1", css, flags=re.IGNORECASE)
 
 
 _EXT_MIME = {
@@ -81,13 +94,13 @@ def write_bundle(
             else:
                 item["detail"] = None
         data = _data_dict(title, facets, items, card_fields, tile_size, atlas_meta)
-        app_js = viewer.joinpath("app.js").read_text()
-        app_css = viewer.joinpath("app.css").read_text()
+        app_js = _escape_script(viewer.joinpath("app.js").read_text())
+        app_css = _escape_style(viewer.joinpath("app.css").read_text())
         payload = json.dumps(data).replace("<", "\\u003c")
         html = (
             "<!doctype html><html><head><meta charset='utf-8'><title>"
             f"{html_lib.escape(title)}</title><style>{app_css}</style></head><body>"
-            "<div id='app'>pview placeholder viewer (Phase 2 replaces this)</div>"
+            "<div id='app'></div>"
             f"<script id='pview-data' type='application/json'>{payload}</script>"
             f"<script>{app_js}</script></body></html>"
         )

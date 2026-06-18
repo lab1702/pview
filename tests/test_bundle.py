@@ -41,7 +41,9 @@ def test_single_file_bundle(tmp_path):
     assert out.name == "index.html"
     html = out.read_text()
     assert "data:image/png;base64," in html
-    assert "pview placeholder loaded" in html  # app.js inlined
+    assert "id='pview-data'" in html  # inlined data script present
+    assert "id='app'" in html  # mount point present
+    assert "</script></body>" in html  # the app.js script tag closes the body
 
 
 def test_single_file_embeds_atlas_data_uri(tmp_path):
@@ -91,3 +93,24 @@ def test_single_file_inlines_detail_as_data_uri(tmp_path):
     assert data["version"] == 2
     assert data["items"][0]["detail"].startswith("data:image/png;base64,")
     assert data["items"][1]["detail"] is None
+
+
+def test_escape_script_neutralizes_closing_tag():
+    from pview.bundle import _escape_script
+
+    out = _escape_script("var a = '</script><b>';")
+    assert "</script" not in out
+    assert "<\\/script" in out
+    # escaping is case-insensitive: an uppercase closer is neutralized too
+    # (without re.IGNORECASE it would pass through unescaped)
+    assert "</script" not in _escape_script("</SCRIPT>").lower()
+
+
+def test_escape_style_neutralizes_closing_tag():
+    from pview.bundle import _escape_style
+
+    out = _escape_style("a{content:'</style>'}")
+    assert "</style" not in out
+    assert "<\\/style" in out
+    # escaping is case-insensitive: an uppercase closer is neutralized too
+    assert "</style" not in _escape_style("</STYLE>").lower()

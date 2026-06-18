@@ -23,15 +23,15 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
     let disposed = false
     let destroyed = false
     const disposers: Array<() => void> = []
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') state.selectedId.value = null
+    }
     const teardown = () => {
       if (destroyed) return
       destroyed = true
       for (const d of disposers) d()
       window.removeEventListener('keydown', onKey)
       scene.destroy()
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') state.selectedId.value = null
     }
     window.addEventListener('keydown', onKey)
 
@@ -142,7 +142,8 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
         <DetailCard
           item={selectedItem}
           baseUrl={baseUrl}
-          rect={focusRect.value}
+          rect={focusRect}
+          nameKey={bundle.cardFields[0] ?? ''}
           onClose={() => (state.selectedId.value = null)}
         />
       )}

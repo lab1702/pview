@@ -1,13 +1,33 @@
+import { useEffect, useRef, useState } from 'preact/hooks'
 import type { Bundle } from '../core/bundle'
+import { isBucketable } from '../core/facets'
 import type { ViewerState } from './state'
 
 export function Topbar({ bundle, state }: { bundle: Bundle; state: ViewerState }) {
   const sortable = bundle.facets.filter((f) => f.type !== 'text' || f.name === bundle.cardFields[0])
-  const bucketable = bundle.facets.filter(
-    (f) => f.type === 'category' || f.type === 'numeric' || f.type === 'date',
-  )
+  const bucketable = bundle.facets.filter(isBucketable)
   const total = bundle.items.length
   const visible = state.visibleIds.value.size
+
+  const [searchText, setSearchText] = useState(state.query.value)
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  // keep the box in sync when the query is changed externally (e.g. Clear all)
+  useEffect(() => {
+    setSearchText(state.query.value)
+  }, [state.query.value])
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current)
+    },
+    [],
+  )
+  const onSearch = (v: string) => {
+    setSearchText(v)
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => {
+      state.query.value = v
+    }, 150)
+  }
 
   return (
     <div class="pview-topbar">
@@ -16,10 +36,8 @@ export function Topbar({ bundle, state }: { bundle: Bundle; state: ViewerState }
         class="pview-search"
         type="search"
         placeholder="Search…"
-        value={state.query.value}
-        onInput={(e) => {
-          state.query.value = (e.target as HTMLInputElement).value
-        }}
+        value={searchText}
+        onInput={(e) => onSearch((e.target as HTMLInputElement).value)}
       />
       <div class="pview-view-toggle" role="group" aria-label="View">
         <button
@@ -48,7 +66,9 @@ export function Topbar({ bundle, state }: { bundle: Bundle; state: ViewerState }
             }}
           >
             {bucketable.map((f) => (
-              <option key={f.name} value={f.name}>{f.name}</option>
+              <option key={f.name} value={f.name}>
+                {f.name}
+              </option>
             ))}
           </select>
         </label>
@@ -64,7 +84,9 @@ export function Topbar({ bundle, state }: { bundle: Bundle; state: ViewerState }
         >
           <option value="">—</option>
           {sortable.map((f) => (
-            <option key={f.name} value={f.name}>{f.name}</option>
+            <option key={f.name} value={f.name}>
+              {f.name}
+            </option>
           ))}
         </select>
         <button
