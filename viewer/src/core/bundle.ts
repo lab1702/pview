@@ -16,6 +16,9 @@ export interface Item {
   atlas: number
   rect: [number, number, number, number]
   detail: string | null
+  /** Per-item background (#rrggbb), the exact color baked into the tile by the
+   *  Python builder. Absent only in hand-built/legacy bundles. */
+  color?: string
 }
 
 export interface Bundle {
@@ -74,6 +77,7 @@ export function parseBundle(json: unknown): Bundle {
       atlas: r.atlas,
       rect: r.rect as [number, number, number, number],
       detail: (r.detail ?? null) as string | null,
+      color: typeof r.color === 'string' ? r.color : undefined,
     }
   })
   return {

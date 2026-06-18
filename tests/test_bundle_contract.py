@@ -1,4 +1,5 @@
 import json
+import re
 
 import pandas as pd
 from PIL import Image
@@ -6,7 +7,7 @@ from PIL import Image
 from pview import build
 
 TOP_KEYS = {"version", "title", "tileSize", "facets", "cardFields", "atlases", "items"}
-ITEM_KEYS = {"id", "values", "atlas", "rect", "detail"}
+ITEM_KEYS = {"id", "values", "atlas", "rect", "detail", "color"}
 FACET_TYPES = {"numeric", "date", "category", "text"}
 
 
@@ -33,6 +34,7 @@ def test_data_json_matches_viewer_bundle_contract(tmp_path):
         assert all(isinstance(n, int) for n in item["rect"])
         assert isinstance(item["values"], dict)
         assert item["detail"] is None or isinstance(item["detail"], str)
+        assert isinstance(item["color"], str) and re.fullmatch(r"#[0-9a-f]{6}", item["color"])
 
     # positively exercise BOTH detail variants so neither silently disappears:
     # the imaged item carries a detail path, the blank-photo item carries None.

@@ -12,7 +12,7 @@ import pandas as pd
 from .atlas import pack
 from .bundle import write_bundle
 from .facets import infer_facets
-from .images import load_tile
+from .images import bg_hex, load_tile
 
 __version__ = "0.1.0"
 
@@ -100,7 +100,10 @@ def build_with_summary(
             details[pos] = (loaded.original, loaded.ext)
 
         values = {c: _coerce(row[c]) for c in df.columns if c != image_col}
-        items.append({"id": pos, "values": values})
+        # bg_hex(pos) is the same per-item color baked into the tile by
+        # load_tile; emitting it lets the viewer reuse it without reimplementing
+        # the palette (single source of truth in images.py).
+        items.append({"id": pos, "values": values, "color": bg_hex(pos)})
 
     atlas_images, placements = pack(tiles, tile_size=tile_size)
     for item, place in zip(items, placements):
