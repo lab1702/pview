@@ -4,7 +4,8 @@ Run from this directory:  python make_assets.py
 
 Produces 9 images of "random things" at deliberately different sizes and
 aspect ratios (wide, tall, square, large, tiny) so the example shows how
-pview normalizes every tile to a square via a center-crop+fit. The people in
+pview fits every image to a square tile, preserving aspect ratio and
+letterboxing/pillarboxing the margins. The people in
 ``people.csv`` reference these by relative path; one person has a blank image
 cell, which pview renders as a generated text card instead.
 """

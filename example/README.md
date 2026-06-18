@@ -36,10 +36,13 @@ HTML file with all assets inlined.
 
 ## What it demonstrates
 
-- **Scaling / cropping** — every source image, whatever its dimensions, is
-  center-cropped and fit to a fixed square tile. Open `site/atlas/atlas_0.png`
-  to see them side by side: the wide horizon loses its edges, the tall tower is
-  trimmed top-and-bottom, the squares fit cleanly.
+- **Scaling / fitting** — every source image, whatever its dimensions, is
+  scaled to fit a fixed square tile while keeping its aspect ratio, then centered.
+  Open `site/atlas/atlas_0.png` to see them side by side: the wide horizon is
+  letterboxed (full width, background bands top-and-bottom), the tall tower is
+  pillarboxed (full height, background bands left-and-right), the squares fit
+  edge-to-edge. The uncovered margins use the same per-item background color as
+  the generated cards, so nothing is cropped away.
 - **Generated cards** — the one row with a blank `photo` (Júlia Costa) becomes a
   text card: her name plus the `card-fields` (`department`, `city`) drawn on a
   deterministic, per-item background color. The same fallback kicks in for any

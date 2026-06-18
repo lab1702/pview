@@ -8,3 +8,4 @@ dist/
 viewer/node_modules/
 viewer/dist/
 viewer/fixtures/
+example/site/

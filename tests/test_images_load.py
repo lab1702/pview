@@ -31,6 +31,29 @@ def test_local_image_is_loaded_and_resized(tmp_path):
     assert r.ext == ".png"
 
 
+def _solid_png(w, h, color):
+    buf = io.BytesIO()
+    Image.new("RGB", (w, h), color).save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def test_non_square_image_is_contained_and_letterboxed_with_card_bg(tmp_path):
+    # A wide image scaled to fit a square should keep its aspect ratio and be
+    # centered, with the uncovered margins filled by the same per-item bg color
+    # used for cards that have no image.
+    from pview.images import _bg_color
+
+    p = tmp_path / "wide.png"
+    p.write_bytes(_solid_png(16, 8, (200, 30, 40)))  # 2:1 aspect
+    r = load_tile(str(p), item_id=5, name="Ada", fields=[], tile_size=32)
+    assert r.tile.size == (32, 32)
+    px = r.tile.load()
+    # 16x8 contained into 32x32 -> 32x16, centered vertically: rows 8..23 image.
+    assert px[16, 16] == (200, 30, 40, 255)        # center is the image
+    assert px[16, 0] == (*_bg_color(5), 255)       # top margin is the card bg
+    assert px[16, 31] == (*_bg_color(5), 255)      # bottom margin is the card bg
+
+
 def test_missing_value_generates_card():
     r = load_tile(None, item_id=1, name="Ada", fields=[("age", "36")], tile_size=32)
     assert r.tile.size == (32, 32)

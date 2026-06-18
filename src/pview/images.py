@@ -119,8 +119,15 @@ def _fetch_url(url: str, cache_dir: Path | None, http_get: Callable[[str], bytes
     return _get_with_retry(url, http_get)
 
 
-def _normalize(img: Image.Image, tile_size: int) -> Image.Image:
-    return ImageOps.fit(img.convert("RGBA"), (tile_size, tile_size))
+def _normalize(img: Image.Image, tile_size: int, item_id: int) -> Image.Image:
+    # Scale to fit the square while preserving aspect ratio (letterbox/pillarbox)
+    # rather than cropping. Uncovered margins use the same per-item background as
+    # cards with no image, so image and generated cards sit on a consistent field.
+    fitted = ImageOps.contain(img.convert("RGBA"), (tile_size, tile_size))
+    tile = Image.new("RGBA", (tile_size, tile_size), (*_bg_color(item_id), 255))
+    offset = ((tile_size - fitted.width) // 2, (tile_size - fitted.height) // 2)
+    tile.paste(fitted, offset, fitted)
+    return tile
 
 
 def load_tile(
@@ -150,7 +157,7 @@ def load_tile(
             img = Image.open(io.BytesIO(raw))
             img.load()
             return LoadedImage(
-                tile=_normalize(img, tile_size),
+                tile=_normalize(img, tile_size, item_id),
                 generated=False,
                 error=None,
                 original=raw,
