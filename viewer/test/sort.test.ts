@@ -35,3 +35,24 @@ it('null facet returns an unchanged copy', () => {
   expect(out).toEqual([2, 0, 1])
   expect(out).not.toBe(input)
 })
+
+it('sorts missing/non-numeric values to the end in both directions', () => {
+  const withBad: Item[] = [
+    { id: 0, values: { age: 30, name: 'Bob' }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+    { id: 1, values: { age: 'n/a', name: 'Ada' }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+    { id: 2, values: { age: 10, name: 'Cy' }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+  ]
+  // The non-numeric value (id 1) trails the real numbers regardless of direction.
+  expect(sortIds([0, 1, 2], withBad, 'age', 'asc', facets)).toEqual([2, 0, 1])
+  expect(sortIds([0, 1, 2], withBad, 'age', 'desc', facets)).toEqual([0, 2, 1])
+})
+
+it('sorts numeric-looking category values numerically, not lexicographically', () => {
+  const f: Facet[] = [{ name: 'rank', type: 'category', values: ['2', '9', '10'] }]
+  const its: Item[] = [
+    { id: 0, values: { rank: '10' }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+    { id: 1, values: { rank: '2' }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+    { id: 2, values: { rank: '9' }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+  ]
+  expect(sortIds([0, 1, 2], its, 'rank', 'asc', f)).toEqual([1, 2, 0]) // 2, 9, 10
+})

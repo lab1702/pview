@@ -69,6 +69,14 @@ def test_missing_name_col_raises(tmp_path):
         build(_df(tmp_path), name_col="nope", out_dir=tmp_path / "s")
 
 
+def test_duplicate_columns_raise_clear_error(tmp_path):
+    import pytest
+
+    df = pd.DataFrame([[1, 2, 3], [4, 5, 6]], columns=["name", "age", "name"])
+    with pytest.raises(ValueError, match="Duplicate column names"):
+        build(df, name_col="name", out_dir=tmp_path / "s")
+
+
 def test_coerce_serializes_datetimes_to_iso():
     import datetime
     import numpy as np

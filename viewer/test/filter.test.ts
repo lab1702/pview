@@ -51,3 +51,24 @@ it('excludes items whose numeric value is non-numeric', () => {
 it('skips an unknown facet name in the state', () => {
   expect(applyFilters(items, facets, { nope: new Set(['x']) }).size).toBe(3)
 })
+
+it('excludes items with a missing numeric value (not coerced to 0)', () => {
+  const withMissing: Item[] = [
+    ...items,
+    { id: 3, values: { g: 'a', age: null, bio: 'q' }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+  ]
+  // Range spans 0; Number(null) is 0, so id 3 would slip in if not guarded.
+  const out = applyFilters(withMissing, facets, { age: { min: 0, max: 100 } })
+  expect(out.has(3)).toBe(false)
+})
+
+it('date range filters inclusively and excludes missing dates', () => {
+  const f: Facet[] = [{ name: 'joined', type: 'date', min: '2000-01-01', max: '2030-01-01' }]
+  const its: Item[] = [
+    { id: 0, values: { joined: '2010-05-01' }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+    { id: 1, values: { joined: '2025-05-01' }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+    { id: 2, values: { joined: null }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+  ]
+  const out = applyFilters(its, f, { joined: { min: '2010-01-01', max: '2020-01-01' } })
+  expect([...out].sort()).toEqual([0]) // id 1 out of range, id 2 missing
+})

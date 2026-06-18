@@ -46,6 +46,17 @@ def test_single_file_bundle(tmp_path):
     assert "</script></body>" in html  # the app.js script tag closes the body
 
 
+def test_single_file_uppercase_html_suffix_writes_a_file(tmp_path):
+    # An explicit .HTML path is a single-file target, not a directory.
+    args = _args(tmp_path)
+    args["single_file"] = True
+    args["out_dir"] = tmp_path / "Report.HTML"
+    out = write_bundle(**args)
+    assert out == tmp_path / "Report.HTML"
+    assert out.is_file()
+    assert "id='pview-data'" in out.read_text()
+
+
 def test_single_file_embeds_atlas_data_uri(tmp_path):
     import re
 

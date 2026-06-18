@@ -71,6 +71,20 @@ def test_bad_local_path_generates_card_with_error(tmp_path):
     assert r.original is None and r.ext is None
 
 
+def test_oversized_image_degrades_to_card(tmp_path, monkeypatch):
+    # A declared size over the pixel cap must be rejected before decode and fall
+    # back to a generated card rather than expanding into memory.
+    import pview.images as images
+
+    monkeypatch.setattr(images, "_MAX_IMAGE_PIXELS", 4)  # an 8x8 png (64px) exceeds this
+    p = tmp_path / "x.png"
+    p.write_bytes(_png_bytes())
+    r = load_tile(str(p), item_id=0, name="Ada", fields=[], tile_size=32)
+    assert r.generated is True
+    assert r.error is not None and "pixel limit" in r.error
+    assert r.tile.size == (32, 32) and r.tile.mode == "RGBA"
+
+
 def test_url_is_fetched_via_injected_getter():
     calls = []
 
