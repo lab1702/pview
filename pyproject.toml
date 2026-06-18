@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pview"
+version = "0.1.0"
+description = "PivotViewer-style interactive collection viewer for Python"
+requires-python = ">=3.11"
+dependencies = ["pandas", "pillow", "httpx"]
+
+[project.optional-dependencies]
+cli = ["openpyxl"]
+dev = ["pytest"]
+
+[project.scripts]
+pview = "pview.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pview"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
