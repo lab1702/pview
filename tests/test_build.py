@@ -129,3 +129,4 @@ def test_build_single_file_inlines_detail(tmp_path):
     data = json.loads(m.group(1))
     assert data["items"][0]["detail"].startswith("data:image/png;base64,")
     assert data["items"][1]["detail"] is None
+    assert data["items"][2]["detail"] is None
