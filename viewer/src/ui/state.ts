@@ -9,6 +9,8 @@ export interface ViewerState {
   filter: Signal<FilterState>
   sort: Signal<{ facet: string | null; dir: SortDir }>
   query: Signal<string>
+  view: Signal<'grid' | 'histogram'>
+  histogramFacet: Signal<string | null>
   visibleIds: ReadonlySignal<Set<number>>
   sortedVisible: ReadonlySignal<number[]>
   counts: ReadonlySignal<Map<string, Map<string, number>>>
@@ -19,6 +21,11 @@ export function createViewerState(bundle: Bundle): ViewerState {
   const filter = signal<FilterState>({})
   const sort = signal<{ facet: string | null; dir: SortDir }>({ facet: null, dir: 'asc' })
   const query = signal<string>('')
+  const bucketable = bundle.facets.filter(
+    (f) => f.type === 'category' || f.type === 'numeric' || f.type === 'date',
+  )
+  const view = signal<'grid' | 'histogram'>('grid')
+  const histogramFacet = signal<string | null>(bucketable[0]?.name ?? null)
   const textFacetNames = bundle.facets.filter((f) => f.type === 'text').map((f) => f.name)
 
   const visibleIds = computed(() => {
@@ -43,5 +50,5 @@ export function createViewerState(bundle: Bundle): ViewerState {
     query.value = ''
   }
 
-  return { filter, sort, query, visibleIds, sortedVisible, counts, reset }
+  return { filter, sort, query, view, histogramFacet, visibleIds, sortedVisible, counts, reset }
 }

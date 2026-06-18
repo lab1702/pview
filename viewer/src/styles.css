@@ -19,3 +19,8 @@ html, body, #app { margin: 0; height: 100%; }
 .pview-range-labels { display: flex; justify-content: space-between; font-size: 12px; color: #aaa; }
 .pview-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(17,17,17,0.7); pointer-events: auto; }
 .pview-error { color: #eee; font: 16px sans-serif; padding: 1rem; }
+.pview-view-toggle { display: inline-flex; }
+.pview-view-toggle button { background: #222; border: 1px solid #444; color: #ccc; padding: 4px 10px; cursor: pointer; }
+.pview-view-toggle button[aria-pressed='true'] { background: #4a90d9; color: #fff; border-color: #4a90d9; }
+.pview-view-toggle button:disabled { opacity: 0.4; cursor: default; }
+.pview-groupby { display: inline-flex; align-items: center; gap: 4px; }

@@ -3,6 +3,9 @@ import type { ViewerState } from './state'
 
 export function Topbar({ bundle, state }: { bundle: Bundle; state: ViewerState }) {
   const sortable = bundle.facets.filter((f) => f.type !== 'text' || f.name === bundle.cardFields[0])
+  const bucketable = bundle.facets.filter(
+    (f) => f.type === 'category' || f.type === 'numeric' || f.type === 'date',
+  )
   const total = bundle.items.length
   const visible = state.visibleIds.value.size
 
@@ -18,6 +21,38 @@ export function Topbar({ bundle, state }: { bundle: Bundle; state: ViewerState }
           state.query.value = (e.target as HTMLInputElement).value
         }}
       />
+      <div class="pview-view-toggle" role="group" aria-label="View">
+        <button
+          type="button"
+          aria-pressed={state.view.value === 'grid'}
+          onClick={() => (state.view.value = 'grid')}
+        >
+          Grid
+        </button>
+        <button
+          type="button"
+          aria-pressed={state.view.value === 'histogram'}
+          disabled={bucketable.length === 0}
+          onClick={() => (state.view.value = 'histogram')}
+        >
+          Histogram
+        </button>
+      </div>
+      {state.view.value === 'histogram' && (
+        <label class="pview-groupby">
+          Group by:
+          <select
+            value={state.histogramFacet.value ?? ''}
+            onChange={(e) => {
+              state.histogramFacet.value = (e.target as HTMLSelectElement).value || null
+            }}
+          >
+            {bucketable.map((f) => (
+              <option value={f.name}>{f.name}</option>
+            ))}
+          </select>
+        </label>
+      )}
       <label class="pview-sort">
         Sort:
         <select
