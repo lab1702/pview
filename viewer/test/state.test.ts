@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { it, expect } from 'vitest'
 import { createViewerState } from '../src/ui/state'
 import type { Bundle } from '../src/core/bundle'
 
