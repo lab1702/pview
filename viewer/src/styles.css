@@ -1,5 +1,21 @@
 html, body, #app { margin: 0; height: 100%; }
-.pview-root { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #111; }
-.pview-canvas { position: absolute; inset: 0; }
-.pview-title { position: absolute; top: 12px; left: 14px; color: #eee; font: 600 16px sans-serif; pointer-events: none; }
+.pview-root { display: flex; flex-direction: column; width: 100vw; height: 100vh; overflow: hidden; background: #111; color: #eee; font-family: sans-serif; }
+.pview-topbar { display: flex; align-items: center; gap: 12px; padding: 8px 14px; background: #1b1b1b; border-bottom: 1px solid #333; }
+.pview-topbar-title { font-weight: 600; }
+.pview-search { padding: 4px 8px; background: #222; border: 1px solid #444; color: #eee; border-radius: 4px; }
+.pview-count { margin-left: auto; color: #aaa; font-variant-numeric: tabular-nums; }
+.pview-body { flex: 1; display: flex; min-height: 0; }
+.pview-sidebar { width: 240px; overflow-y: auto; padding: 10px 12px; background: #181818; border-right: 1px solid #333; }
+.pview-facet h3 { margin: 14px 0 6px; font-size: 13px; text-transform: uppercase; color: #9ad; }
+.pview-checkboxes { list-style: none; margin: 0; padding: 0; }
+.pview-checkboxes label { display: flex; gap: 6px; align-items: center; padding: 2px 0; font-size: 14px; }
+.pview-clear { margin-bottom: 8px; }
+.pview-canvas { position: relative; flex: 1; min-width: 0; }
+.pview-range { padding: 6px 4px; }
+.pview-range-track { position: relative; height: 6px; background: #333; border-radius: 3px; margin: 14px 6px; }
+.pview-range-fill { position: absolute; height: 100%; background: #4a90d9; border-radius: 3px; }
+.pview-range-handle { position: absolute; top: 50%; width: 14px; height: 14px; margin-left: -7px; transform: translateY(-50%); background: #cde; border-radius: 50%; cursor: pointer; }
+.pview-range-handle:focus { outline: 2px solid #9ad; }
+.pview-range-labels { display: flex; justify-content: space-between; font-size: 12px; color: #aaa; }
+.pview-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(17,17,17,0.7); pointer-events: auto; }
 .pview-error { color: #eee; font: 16px sans-serif; padding: 1rem; }

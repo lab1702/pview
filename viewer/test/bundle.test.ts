@@ -55,3 +55,36 @@ describe('parseBundle', () => {
     expect(() => parseBundle(bad)).toThrow(/atlases/)
   })
 })
+
+describe('parseBundle field guards', () => {
+  function base() {
+    return {
+      version: 2,
+      atlases: [{ file: 'a', width: 1, height: 1 }],
+      items: [{ id: 0, values: {}, atlas: 0, rect: [0, 0, 1, 1], detail: null }],
+    }
+  }
+
+  it('throws on a non-numeric id', () => {
+    const bad: any = base()
+    bad.items[0].id = 'x'
+    expect(() => parseBundle(bad)).toThrow(/id/)
+  })
+
+  it('throws on a non-numeric atlas', () => {
+    const bad: any = base()
+    bad.items[0].atlas = null
+    expect(() => parseBundle(bad)).toThrow(/atlas/)
+  })
+
+  it('throws on a malformed rect', () => {
+    const bad: any = base()
+    bad.items[0].rect = [0, 0, 1]
+    expect(() => parseBundle(bad)).toThrow(/rect/)
+  })
+
+  it('accepts a well-formed item', () => {
+    const ok = parseBundle(base())
+    expect(ok.items[0].rect).toEqual([0, 0, 1, 1])
+  })
+})

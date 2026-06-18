@@ -50,16 +50,32 @@ export function parseBundle(json: unknown): Bundle {
   if (!Array.isArray(b.atlases)) {
     throw new Error('pview: bundle is missing an "atlases" array')
   }
-  // Per-item field validation (id/atlas/rect types) is intentionally deferred:
-  // M1 validates bundle structure only. These casts trust pview-generated data;
-  // field-level hardening can come later if untrusted bundles become a concern.
-  const items: Item[] = (b.items as Record<string, unknown>[]).map((raw) => ({
-    id: raw.id as number,
-    values: (raw.values ?? {}) as Record<string, unknown>,
-    atlas: raw.atlas as number,
-    rect: raw.rect as [number, number, number, number],
-    detail: (raw.detail ?? null) as string | null,
-  }))
+  const items: Item[] = (b.items as unknown[]).map((raw, i) => {
+    if (typeof raw !== 'object' || raw === null) {
+      throw new Error(`pview: item ${i} is not an object`)
+    }
+    const r = raw as Record<string, unknown>
+    if (typeof r.id !== 'number') {
+      throw new Error(`pview: item ${i} has a non-numeric id`)
+    }
+    if (typeof r.atlas !== 'number') {
+      throw new Error(`pview: item ${i} has a non-numeric atlas`)
+    }
+    if (
+      !Array.isArray(r.rect) ||
+      r.rect.length !== 4 ||
+      !r.rect.every((n) => typeof n === 'number')
+    ) {
+      throw new Error(`pview: item ${i} has an invalid rect (expected 4 numbers)`)
+    }
+    return {
+      id: r.id,
+      values: (r.values ?? {}) as Record<string, unknown>,
+      atlas: r.atlas,
+      rect: r.rect as [number, number, number, number],
+      detail: (r.detail ?? null) as string | null,
+    }
+  })
   return {
     version,
     title: (b.title as string) ?? '',

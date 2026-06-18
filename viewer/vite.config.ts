@@ -1,11 +1,15 @@
 import { defineConfig } from 'vite'
+import preact from '@preact/preset-vite'
 import { copyFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 // Copy the production HTML template into the build output as index.html.
+// `apply: 'build'` scopes it to `vite build` only — otherwise its closeBundle
+// hook fires on every Vitest run and clobbers the committed placeholder.
 function emitIndexHtml() {
   return {
     name: 'emit-index-html',
+    apply: 'build' as const,
     closeBundle() {
       copyFileSync(
         resolve(import.meta.dirname, 'template.html'),
@@ -16,10 +20,6 @@ function emitIndexHtml() {
 }
 
 export default defineConfig({
-  // JSX transform is driven by tsconfig's jsxImportSource: 'preact' (rolldown
-  // reads it at build time). No top-level esbuild key — Vite 8 bundles via
-  // rolldown and Vitest 4 via oxc, both of which ignore it (and Vitest warns).
-  // M2 will add Vitest-side JSX transform config when it introduces component tests.
   build: {
     outDir: '../src/pview/viewer_assets',
     emptyOutDir: true,
@@ -32,9 +32,9 @@ export default defineConfig({
       cssFileName: 'app',
     },
   },
-  plugins: [emitIndexHtml()],
+  plugins: [preact(), emitIndexHtml()],
   test: {
     environment: 'node',
-    include: ['test/**/*.test.ts'],
+    include: ['test/**/*.test.ts', 'test/**/*.test.tsx'],
   },
 })
