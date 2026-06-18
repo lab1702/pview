@@ -90,8 +90,8 @@ export class Scene {
     this.settled = !active
   }
 
-  frame(bounds: { w: number; h: number }): void {
-    this.cam = fitToBounds(bounds, this.viewport())
+  frame(bounds: { w: number; h: number }, center?: { x: number; y: number }): void {
+    this.cam = fitToBounds(bounds, this.viewport(), 0.9, center)
     this.applyCamera()
   }
 

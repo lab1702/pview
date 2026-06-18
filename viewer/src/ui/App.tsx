@@ -31,8 +31,14 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
     const gap = Math.round(bundle.tileSize * 0.08)
     const barGap = Math.round(bundle.tileSize * 0.5)
 
-    // Compute the active layout, push bars to the scene, return targets + bounds.
-    const computeLayout = (): { targets: Map<number, { x: number; y: number; scale: number }>; bounds: { w: number; h: number } } => {
+    // Compute the active layout, push bars to the scene, return targets + bounds + frame center.
+    // Histogram content stacks upward into negative Y, so it needs an explicit
+    // camera center; grid content spans [0,w]×[0,h] and uses the default center.
+    const computeLayout = (): {
+      targets: Map<number, { x: number; y: number; scale: number }>
+      bounds: { w: number; h: number }
+      center?: { x: number; y: number }
+    } => {
       if (state.view.value === 'histogram' && state.histogramFacet.value) {
         const facet = bundle.facets.find((f) => f.name === state.histogramFacet.value)
         if (facet) {
@@ -42,7 +48,7 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
             barGap,
           })
           scene.setBars(r.bars)
-          return { targets: r.targets, bounds: r.bounds }
+          return { targets: r.targets, bounds: r.bounds, center: { x: r.bounds.w / 2, y: -r.bounds.h / 2 } }
         }
       }
       scene.setBars([])
@@ -59,14 +65,14 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
         await scene.setSprites(bundle, baseUrl)
         const first = computeLayout()
         scene.setLayout(first.targets, new Set(state.visibleIds.value), false)
-        scene.frame(first.bounds)
+        scene.frame(first.bounds, first.center)
         lastMode = `${state.view.value}:${state.histogramFacet.value}`
         disposeEffect = effect(() => {
           const r = computeLayout()
           scene.setLayout(r.targets, new Set(state.visibleIds.value))
           const mode = `${state.view.value}:${state.histogramFacet.value}`
           if (mode !== lastMode) {
-            scene.frame(r.bounds)
+            scene.frame(r.bounds, r.center)
             lastMode = mode
           }
         })

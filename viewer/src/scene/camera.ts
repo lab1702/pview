@@ -46,10 +46,17 @@ export function zoomAt(cam: Camera, sx: number, sy: number, factor: number, vp: 
   return { x: cam.x + (before.x - after.x), y: cam.y + (before.y - after.y), zoom }
 }
 
-export function fitToBounds(bounds: { w: number; h: number }, vp: Viewport, padding = 0.9): Camera {
+export function fitToBounds(
+  bounds: { w: number; h: number },
+  vp: Viewport,
+  padding = 0.9,
+  center?: { x: number; y: number },
+): Camera {
   if (bounds.w <= 0 || bounds.h <= 0) {
     return { x: 0, y: 0, zoom: 1 }
   }
   const zoom = Math.min(vp.width / bounds.w, vp.height / bounds.h) * padding
-  return { x: bounds.w / 2, y: bounds.h / 2, zoom }
+  // Grid content spans [0, w]×[0, h] so its center is (w/2, h/2); the histogram
+  // stacks upward into negative Y, so the caller passes an explicit center.
+  return { x: center?.x ?? bounds.w / 2, y: center?.y ?? bounds.h / 2, zoom }
 }
