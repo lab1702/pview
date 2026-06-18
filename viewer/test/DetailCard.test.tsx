@@ -28,6 +28,17 @@ it('renders a generated header (no img) showing the nameKey value for a detail-l
   expect(header!.textContent).toContain('Ada')
 })
 
+it('uses the given nameKey (not the first values key) for the generated header', () => {
+  // nameKey 'age' is NOT the first key, so this distinguishes the lookup path
+  render(<DetailCard item={item(null)} baseUrl="./" rect={rect()} nameKey="age" onClose={() => {}} />)
+  expect(document.querySelector('.pview-detail-generated')!.textContent).toContain('36')
+})
+
+it('falls back to the first values key when nameKey is empty (no cardFields)', () => {
+  render(<DetailCard item={item(null)} baseUrl="./" rect={rect()} nameKey="" onClose={() => {}} />)
+  expect(document.querySelector('.pview-detail-generated')!.textContent).toContain('Ada')
+})
+
 it('renders all attribute rows and a working close button', () => {
   const onClose = vi.fn()
   render(<DetailCard item={item('detail/0.png')} baseUrl="./" rect={rect()} nameKey="name" onClose={onClose} />)
