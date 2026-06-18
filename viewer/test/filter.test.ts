@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { it, expect } from 'vitest'
 import { applyFilters, type FilterState } from '../src/core/filter'
 import type { Facet, Item } from '../src/core/bundle'
 
@@ -37,4 +37,17 @@ it('combines constraints with AND', () => {
 
 it('ignores text-facet constraints', () => {
   expect(applyFilters(items, facets, { bio: new Set(['x']) }).size).toBe(3)
+})
+
+it('excludes items whose numeric value is non-numeric', () => {
+  const withBad: Item[] = [
+    ...items,
+    { id: 3, values: { g: 'a', age: 'n/a', bio: 'q' }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+  ]
+  const out = applyFilters(withBad, facets, { age: { min: 0, max: 100 } })
+  expect(out.has(3)).toBe(false)
+})
+
+it('skips an unknown facet name in the state', () => {
+  expect(applyFilters(items, facets, { nope: new Set(['x']) }).size).toBe(3)
 })
