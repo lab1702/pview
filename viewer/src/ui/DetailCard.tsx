@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks'
+import type { ReadonlySignal } from '@preact/signals'
 import type { Item } from '../core/bundle'
 import { resolveAtlasUrl } from '../scene/urls'
 import { generatedColor } from '../core/cardcolor'
@@ -6,11 +7,12 @@ import { generatedColor } from '../core/cardcolor'
 interface Props {
   item: Item
   baseUrl: string
-  rect: { cx: number; cy: number; size: number; progress: number }
+  rect: ReadonlySignal<{ cx: number; cy: number; size: number; progress: number }>
+  nameKey: string
   onClose: () => void
 }
 
-export function DetailCard({ item, baseUrl, rect, onClose }: Props) {
+export function DetailCard({ item, baseUrl, rect, nameKey, onClose }: Props) {
   const [imgError, setImgError] = useState(false)
   // Reset the broken-image flag when a different item is shown — the parent
   // patches one DetailCard instance across selections, so a prior error must
@@ -18,16 +20,18 @@ export function DetailCard({ item, baseUrl, rect, onClose }: Props) {
   useEffect(() => {
     setImgError(false)
   }, [item.id])
-  const width = Math.max(240, Math.min(rect.size, 520))
-  const opacity = Math.max(0, Math.min(1, (rect.progress - 0.3) / 0.5))
-  const headerName = String(item.values[Object.keys(item.values)[0]] ?? '')
+
+  const r = rect.value // read the signal here so only DetailCard re-renders per frame
+  const width = Math.max(240, Math.min(r.size, 520))
+  const opacity = Math.max(0, Math.min(1, (r.progress - 0.3) / 0.5))
+  const headerName = String(item.values[nameKey] ?? item.values[Object.keys(item.values)[0]] ?? '')
 
   return (
     <div
       class="pview-detail"
       style={{
-        left: `${rect.cx}px`,
-        top: `${rect.cy}px`,
+        left: `${r.cx}px`,
+        top: `${r.cy}px`,
         width: `${width}px`,
         transform: 'translate(-50%, -50%)',
         opacity: String(opacity),
