@@ -1,0 +1,93 @@
+from __future__ import annotations
+
+import base64
+import io
+import json
+import shutil
+from importlib import resources
+from pathlib import Path
+
+from PIL import Image
+
+from .facets import Facet
+
+
+def _viewer_dir():
+    return resources.files("pview").joinpath("viewer_assets")
+
+
+def _data_dict(title, facets, items, card_fields, tile_size, atlas_meta):
+    return {
+        "version": 1,
+        "title": title,
+        "tileSize": tile_size,
+        "facets": [f.to_dict() for f in facets],
+        "cardFields": card_fields,
+        "atlases": atlas_meta,
+        "items": items,
+    }
+
+
+def _png_bytes(img: Image.Image) -> bytes:
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def write_bundle(
+    out_dir,
+    *,
+    title: str,
+    facets: list[Facet],
+    items: list[dict],
+    atlas_images: list[Image.Image],
+    card_fields: list[str],
+    tile_size: int,
+    single_file: bool = False,
+) -> Path:
+    viewer = _viewer_dir()
+
+    if single_file:
+        atlas_uris = []
+        for img in atlas_images:
+            b64 = base64.b64encode(_png_bytes(img)).decode()
+            atlas_uris.append(f"data:image/png;base64,{b64}")
+        atlas_meta = [
+            {"file": atlas_uris[i], "width": img.width, "height": img.height}
+            for i, img in enumerate(atlas_images)
+        ]
+        data = _data_dict(title, facets, items, card_fields, tile_size, atlas_meta)
+        app_js = viewer.joinpath("app.js").read_text()
+        app_css = viewer.joinpath("app.css").read_text()
+        html = (
+            "<!doctype html><html><head><meta charset='utf-8'><title>"
+            f"{title}</title><style>{app_css}</style></head><body>"
+            "<div id='app'></div>"
+            f"<script id='pview-data' type='application/json'>{json.dumps(data)}</script>"
+            f"<script>{app_js}</script></body></html>"
+        )
+        out_path = Path(out_dir)
+        if out_path.suffix != ".html":
+            out_path.mkdir(parents=True, exist_ok=True)
+            out_path = out_path / "index.html"
+        else:
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(html)
+        return out_path
+
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    for asset in ("index.html", "app.js", "app.css"):
+        shutil.copyfile(viewer.joinpath(asset), out / asset)
+
+    atlas_dir = out / "atlas"
+    atlas_dir.mkdir(exist_ok=True)
+    atlas_meta = []
+    for i, img in enumerate(atlas_images):
+        fname = f"atlas/atlas_{i}.png"
+        img.save(out / fname)
+        atlas_meta.append({"file": fname, "width": img.width, "height": img.height})
+
+    data = _data_dict(title, facets, items, card_fields, tile_size, atlas_meta)
+    (out / "data.json").write_text(json.dumps(data, indent=2))
+    return out
