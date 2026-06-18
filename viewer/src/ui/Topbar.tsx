@@ -48,7 +48,7 @@ export function Topbar({ bundle, state }: { bundle: Bundle; state: ViewerState }
             }}
           >
             {bucketable.map((f) => (
-              <option value={f.name}>{f.name}</option>
+              <option key={f.name} value={f.name}>{f.name}</option>
             ))}
           </select>
         </label>
@@ -64,7 +64,7 @@ export function Topbar({ bundle, state }: { bundle: Bundle; state: ViewerState }
         >
           <option value="">—</option>
           {sortable.map((f) => (
-            <option value={f.name}>{f.name}</option>
+            <option key={f.name} value={f.name}>{f.name}</option>
           ))}
         </select>
         <button
