@@ -11,6 +11,7 @@ export interface ViewerState {
   query: Signal<string>
   view: Signal<'grid' | 'histogram'>
   histogramFacet: Signal<string | null>
+  selectedId: Signal<number | null>
   visibleIds: ReadonlySignal<Set<number>>
   sortedVisible: ReadonlySignal<number[]>
   counts: ReadonlySignal<Map<string, Map<string, number>>>
@@ -26,6 +27,7 @@ export function createViewerState(bundle: Bundle): ViewerState {
   )
   const view = signal<'grid' | 'histogram'>('grid')
   const histogramFacet = signal<string | null>(bucketable[0]?.name ?? null)
+  const selectedId = signal<number | null>(null)
   const textFacetNames = bundle.facets.filter((f) => f.type === 'text').map((f) => f.name)
 
   const visibleIds = computed(() => {
@@ -50,5 +52,5 @@ export function createViewerState(bundle: Bundle): ViewerState {
     query.value = ''
   }
 
-  return { filter, sort, query, view, histogramFacet, visibleIds, sortedVisible, counts, reset }
+  return { filter, sort, query, view, histogramFacet, selectedId, visibleIds, sortedVisible, counts, reset }
 }
