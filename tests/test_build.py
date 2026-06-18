@@ -130,3 +130,12 @@ def test_build_single_file_inlines_detail(tmp_path):
     assert data["items"][0]["detail"].startswith("data:image/png;base64,")
     assert data["items"][1]["detail"] is None
     assert data["items"][2]["detail"] is None
+
+
+def test_build_without_image_col_has_null_details(tmp_path):
+    df = _df(tmp_path).drop(columns=["photo"])
+    out = build(df, name_col="name", out_dir=tmp_path / "site")
+    data = json.loads((out / "data.json").read_text())
+    assert data["version"] == 2
+    assert all(item["detail"] is None for item in data["items"])
+    assert not (out / "detail").exists()
