@@ -4,6 +4,7 @@ import { applyFilters, type FilterState } from '../core/filter'
 import { matchQuery } from '../core/search'
 import { sortIds, type SortDir } from '../core/sort'
 import { facetedCounts } from '../core/counts'
+import { isBucketable } from '../core/facets'
 
 export interface ViewerState {
   filter: Signal<FilterState>
@@ -22,9 +23,7 @@ export function createViewerState(bundle: Bundle): ViewerState {
   const filter = signal<FilterState>({})
   const sort = signal<{ facet: string | null; dir: SortDir }>({ facet: null, dir: 'asc' })
   const query = signal<string>('')
-  const bucketable = bundle.facets.filter(
-    (f) => f.type === 'category' || f.type === 'numeric' || f.type === 'date',
-  )
+  const bucketable = bundle.facets.filter(isBucketable)
   const view = signal<'grid' | 'histogram'>('grid')
   const histogramFacet = signal<string | null>(bucketable[0]?.name ?? null)
   const selectedId = signal<number | null>(null)

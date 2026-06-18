@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { it, expect, afterEach } from 'vitest'
+import { it, expect, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/preact'
 import { Topbar } from '../src/ui/Topbar'
 import { createViewerState } from '../src/ui/state'
@@ -27,12 +27,19 @@ it('shows the title and the N of M count', () => {
   expect(screen.getByText(/2 of 2/)).toBeTruthy()
 })
 
-it('typing in search updates the query signal', () => {
-  const b = bundle()
-  const state = createViewerState(b)
-  render(<Topbar bundle={b} state={state} />)
-  fireEvent.input(screen.getByPlaceholderText(/search/i), { target: { value: 'ada' } })
-  expect(state.query.value).toBe('ada')
+it('debounces the search input before updating the query signal', () => {
+  vi.useFakeTimers()
+  try {
+    const b = bundle()
+    const state = createViewerState(b)
+    render(<Topbar bundle={b} state={state} />)
+    fireEvent.input(screen.getByPlaceholderText(/search/i), { target: { value: 'ada' } })
+    expect(state.query.value).toBe('') // not written yet
+    vi.advanceTimersByTime(160)
+    expect(state.query.value).toBe('ada') // written after the debounce
+  } finally {
+    vi.useRealTimers()
+  }
 })
 
 it('toggles to histogram view and shows the group-by picker', () => {
