@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { it, expect } from 'vitest'
 import { sortIds } from '../src/core/sort'
 import type { Facet, Item } from '../src/core/bundle'
 
