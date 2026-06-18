@@ -1,0 +1,5 @@
+html, body, #app { margin: 0; height: 100%; }
+.pview-root { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #111; }
+.pview-canvas { position: absolute; inset: 0; }
+.pview-title { position: absolute; top: 12px; left: 14px; color: #eee; font: 600 16px sans-serif; pointer-events: none; }
+.pview-error { color: #eee; font: 16px sans-serif; padding: 1rem; }
