@@ -2,8 +2,11 @@ import { useEffect, useState } from 'preact/hooks'
 import type { ReadonlySignal } from '@preact/signals'
 import type { Item } from '../core/bundle'
 import { resolveAtlasUrl } from '../scene/urls'
-import { generatedColor } from '../core/cardcolor'
 import { cardName } from '../core/cardname'
+
+// Neutral fallback for hand-built/legacy bundles that predate the per-item
+// `color` field; real builds always supply it (see images.py bg_hex).
+const FALLBACK_BG = '#888888'
 
 interface Props {
   item: Item
@@ -46,7 +49,7 @@ export function DetailCard({ item, baseUrl, rect, nameKey, fieldOrder, onClose }
         {item.detail && !imgError ? (
           <img src={resolveAtlasUrl(item.detail, baseUrl)} alt={headerName} onError={() => setImgError(true)} />
         ) : (
-          <div class="pview-detail-generated" style={{ background: generatedColor(item.id) }}>
+          <div class="pview-detail-generated" style={{ background: item.color ?? FALLBACK_BG }}>
             {headerName}
           </div>
         )}

@@ -24,6 +24,14 @@ describe('parseBundle', () => {
     expect(b.atlases[0].file).toBe('atlas/atlas_0.png')
   })
 
+  it('reads the per-item color, leaving it undefined when absent', () => {
+    const withColor: any = v2bundle()
+    withColor.items[0].color = '#b13333'
+    expect(parseBundle(withColor).items[0].color).toBe('#b13333')
+    // v2bundle() has no color on a second item -> undefined, not a crash
+    expect(parseBundle(v2bundle()).items[0].color).toBeUndefined()
+  })
+
   it('normalizes a missing detail (v1 bundle) to null', () => {
     const v1: any = v2bundle()
     v1.version = 1

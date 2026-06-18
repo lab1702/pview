@@ -64,6 +64,14 @@ def _bg_color(item_id: int) -> tuple[int, int, int]:
     return int(r * 255), int(g * 255), int(b * 255)
 
 
+def bg_hex(item_id: int) -> str:
+    """The per-item background as a ``#rrggbb`` string. Written into the bundle so
+    the viewer's detail card reuses the exact color baked into the atlas tile,
+    rather than recomputing the palette (the single source of truth lives here)."""
+    r, g, b = _bg_color(item_id)
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
 def _truncate(draw: "ImageDraw.ImageDraw", text: str, font, max_width: int) -> str:
     if draw.textlength(text, font=font) <= max_width:
         return text
