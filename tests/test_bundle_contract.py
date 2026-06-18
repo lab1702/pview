@@ -33,3 +33,9 @@ def test_data_json_matches_viewer_bundle_contract(tmp_path):
         assert all(isinstance(n, int) for n in item["rect"])
         assert isinstance(item["values"], dict)
         assert item["detail"] is None or isinstance(item["detail"], str)
+
+    # positively exercise BOTH detail variants so neither silently disappears:
+    # the imaged item carries a detail path, the blank-photo item carries None.
+    details = [item["detail"] for item in data["items"]]
+    assert any(d is None for d in details), "expected an item with detail=None"
+    assert any(isinstance(d, str) for d in details), "expected an item with a detail path"
