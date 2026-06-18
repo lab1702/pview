@@ -60,3 +60,12 @@ export function fitToBounds(
   // stacks upward into negative Y, so the caller passes an explicit center.
   return { x: center?.x ?? bounds.w / 2, y: center?.y ?? bounds.h / 2, zoom }
 }
+
+export function lerpCamera(a: Camera, b: Camera, t: number): Camera {
+  const f = Math.min(1, Math.max(0, t))
+  return {
+    x: a.x + (b.x - a.x) * f,
+    y: a.y + (b.y - a.y) * f,
+    zoom: a.zoom + (b.zoom - a.zoom) * f,
+  }
+}
