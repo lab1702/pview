@@ -48,3 +48,11 @@ it('snap jumps current to target', () => {
   c.snap()
   expect(c.get(0)).toEqual({ x: 5, y: 5, scale: 1, alpha: 1 })
 })
+
+it('clear() removes all entries', () => {
+  const c = new TransitionController(100)
+  c.register(0, { x: 1, y: 2, scale: 1, alpha: 1 })
+  c.setTargets(new Map([[0, { x: 9, y: 9, scale: 1 }]]), new Set([0]))
+  c.clear()
+  expect(c.get(0)).toBeUndefined()
+})

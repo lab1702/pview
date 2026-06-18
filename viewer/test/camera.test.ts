@@ -53,6 +53,13 @@ describe('camera', () => {
     expect(fitToBounds({ w: 0, h: 0 }, vp).zoom).toBe(1)
   })
 
+  it('fitToBounds honors an explicit center (e.g. negative-Y histogram content)', () => {
+    const cam = fitToBounds({ w: 400, h: 300 }, vp, 1, { x: 200, y: -150 })
+    expect(cam.x).toBeCloseTo(200)
+    expect(cam.y).toBeCloseTo(-150) // not the default +150
+    expect(cam.zoom).toBeCloseTo(2)
+  })
+
   it('clamps zoom to MAX_ZOOM and stops moving at the limit', () => {
     const next = zoomAt({ x: 0, y: 0, zoom: MAX_ZOOM }, 600, 200, 2, vp)
     expect(next.zoom).toBe(MAX_ZOOM)

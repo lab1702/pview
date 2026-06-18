@@ -1,4 +1,4 @@
-import { Application, Assets, Container, Sprite } from 'pixi.js'
+import { Application, Assets, Container, Sprite, Text } from 'pixi.js'
 import type { Bundle } from '../core/bundle'
 import type { LayoutTarget } from '../core/layout/grid'
 import { buildSprites, type TextureLoader } from './sprites'
@@ -12,9 +12,12 @@ export class Scene {
   private cam: Camera = { x: 0, y: 0, zoom: 1 }
   private transitions = new TransitionController()
   private loadTexture: TextureLoader
+  private labelLayer = new Container()
+  private labels: Text[] = []
   private dragging = false
   private lastX = 0
   private lastY = 0
+  private settled = false
 
   constructor(loadTexture: TextureLoader = (url) => Assets.load(url)) {
     this.loadTexture = loadTexture
@@ -24,12 +27,16 @@ export class Scene {
     await this.app.init({ resizeTo: el, backgroundAlpha: 0, antialias: true, preference: 'webgl' })
     el.appendChild(this.app.canvas)
     this.app.stage.addChild(this.world)
+    this.world.sortableChildren = true
+    this.labelLayer.zIndex = 1000
+    this.world.addChild(this.labelLayer)
     this.app.ticker.add(this.onTick)
     this.attachInteraction()
     window.addEventListener('resize', this.applyCamera)
   }
 
   async setSprites(bundle: Bundle, baseUrl: string): Promise<void> {
+    this.transitions.clear()
     this.sprites = await buildSprites(bundle, this.world, this.loadTexture, baseUrl)
     for (const [id, sp] of this.sprites) {
       this.transitions.register(id, { x: sp.position.x, y: sp.position.y, scale: sp.scale.x, alpha: 1 })
@@ -39,10 +46,39 @@ export class Scene {
   setLayout(targets: Map<number, LayoutTarget>, visible: Set<number>, animate = true): void {
     this.transitions.setTargets(targets, visible)
     if (!animate) this.transitions.snap()
+    this.settled = false
+  }
+
+  setBars(bars: { label: string; x: number; count: number }[]): void {
+    while (this.labels.length < bars.length) {
+      const t = new Text({
+        text: '',
+        style: { fill: 0xdddddd, fontFamily: 'sans-serif', fontSize: 14, align: 'center' },
+      })
+      t.anchor.set(0.5, 0)
+      this.labelLayer.addChild(t)
+      this.labels.push(t)
+    }
+    for (const t of this.labels) t.visible = false
+    bars.forEach((bar, i) => {
+      const t = this.labels[i]
+      t.text = `${bar.label}\n${bar.count}`
+      t.position.set(bar.x, 8)
+      t.visible = true
+    })
+    this.applyLabelScale()
+  }
+
+  private applyLabelScale(): void {
+    const inv = 1 / this.cam.zoom
+    for (const t of this.labels) {
+      if (t.visible) t.scale.set(inv)
+    }
   }
 
   private onTick = (): void => {
-    this.transitions.tick(this.app.ticker.deltaMS)
+    const active = this.transitions.tick(this.app.ticker.deltaMS)
+    if (this.settled && !active) return
     for (const [id, sp] of this.sprites) {
       const s = this.transitions.get(id)
       if (!s) continue
@@ -51,10 +87,11 @@ export class Scene {
       sp.alpha = s.alpha
       sp.visible = s.alpha > 0.01
     }
+    this.settled = !active
   }
 
-  frame(bounds: { w: number; h: number }): void {
-    this.cam = fitToBounds(bounds, this.viewport())
+  frame(bounds: { w: number; h: number }, center?: { x: number; y: number }): void {
+    this.cam = fitToBounds(bounds, this.viewport(), 0.9, center)
     this.applyCamera()
   }
 
@@ -69,6 +106,7 @@ export class Scene {
       vp.width / 2 - this.cam.x * this.cam.zoom,
       vp.height / 2 - this.cam.y * this.cam.zoom,
     )
+    this.applyLabelScale()
   }
 
   private onPointerDown = (e: PointerEvent): void => {
