@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import html as html_lib
 import io
 import json
 import shutil
@@ -59,11 +60,12 @@ def write_bundle(
         data = _data_dict(title, facets, items, card_fields, tile_size, atlas_meta)
         app_js = viewer.joinpath("app.js").read_text()
         app_css = viewer.joinpath("app.css").read_text()
+        payload = json.dumps(data).replace("<", "\\u003c")
         html = (
             "<!doctype html><html><head><meta charset='utf-8'><title>"
-            f"{title}</title><style>{app_css}</style></head><body>"
-            "<div id='app'></div>"
-            f"<script id='pview-data' type='application/json'>{json.dumps(data)}</script>"
+            f"{html_lib.escape(title)}</title><style>{app_css}</style></head><body>"
+            "<div id='app'>pview placeholder viewer (Phase 2 replaces this)</div>"
+            f"<script id='pview-data' type='application/json'>{payload}</script>"
             f"<script>{app_js}</script></body></html>"
         )
         out_path = Path(out_dir)

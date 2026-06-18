@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -122,6 +123,8 @@ def _coerce(v):
         v = v.item()
     if isinstance(v, (datetime.datetime, datetime.date)):
         return v.isoformat()
+    if isinstance(v, float) and not math.isfinite(v):
+        return None
     return v
 
 

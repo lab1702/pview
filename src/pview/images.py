@@ -19,6 +19,15 @@ def _bg_color(item_id: int) -> tuple[int, int, int]:
     return int(r * 255), int(g * 255), int(b * 255)
 
 
+def _truncate(draw: "ImageDraw.ImageDraw", text: str, font, max_width: int) -> str:
+    if draw.textlength(text, font=font) <= max_width:
+        return text
+    ellipsis = "…"
+    while text and draw.textlength(text + ellipsis, font=font) > max_width:
+        text = text[:-1]
+    return text + ellipsis if text else ellipsis
+
+
 def generate_card(
     item_id: int,
     name: str,
@@ -34,11 +43,16 @@ def generate_card(
     body_font = ImageFont.truetype(font_path, max(9, tile_size // 16))
     margin = tile_size // 12
 
-    draw.text((margin, margin), str(name), fill="white", font=name_font)
+    max_width = tile_size - 2 * margin
+    line_height = tile_size // 12
+    draw.text((margin, margin), _truncate(draw, str(name), name_font, max_width), fill="white", font=name_font)
     y = margin + tile_size // 6
     for label, value in fields:
-        draw.text((margin, y), f"{label}: {value}", fill="white", font=body_font)
-        y += tile_size // 12
+        if y + line_height > tile_size - margin:
+            break
+        line = _truncate(draw, f"{label}: {value}", body_font, max_width)
+        draw.text((margin, y), line, fill="white", font=body_font)
+        y += line_height
     return img
 
 

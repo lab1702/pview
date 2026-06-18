@@ -42,3 +42,18 @@ def test_single_file_bundle(tmp_path):
     html = out.read_text()
     assert "data:image/png;base64," in html
     assert "pview placeholder loaded" in html  # app.js inlined
+
+
+def test_single_file_embeds_atlas_data_uri(tmp_path):
+    import re
+
+    args = _args(tmp_path)
+    args["single_file"] = True
+    out = write_bundle(**args)
+    html = out.read_text()
+    m = re.search(
+        r"<script id='pview-data' type='application/json'>(.*?)</script>", html, re.S
+    )
+    assert m is not None
+    data = json.loads(m.group(1))
+    assert data["atlases"][0]["file"].startswith("data:image/png;base64,")

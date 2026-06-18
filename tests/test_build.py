@@ -88,3 +88,10 @@ def test_nullable_na_image_generates_card_without_error(tmp_path):
     _, summary = build_with_summary(df, name_col="name", image_col="photo", out_dir=tmp_path / "s")
     assert summary.n_generated == 2
     assert summary.n_image_errors == 0
+
+
+def test_coerce_non_finite_floats_become_none():
+    from pview import _coerce
+
+    assert _coerce(float("inf")) is None
+    assert _coerce(float("-inf")) is None
