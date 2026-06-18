@@ -2,7 +2,8 @@ import { Application, Assets, Container, Sprite, Text } from 'pixi.js'
 import type { Bundle } from '../core/bundle'
 import type { LayoutTarget } from '../core/layout/grid'
 import { buildSprites, type TextureLoader } from './sprites'
-import { type Camera, fitToBounds, panBy, zoomAt } from './camera'
+import { type Camera, fitToBounds, panBy, screenToWorld, zoomAt } from './camera'
+import { hitTest, type HitEntry } from '../core/hittest'
 import { TransitionController } from './transitions'
 
 export class Scene {
@@ -18,6 +19,11 @@ export class Scene {
   private lastX = 0
   private lastY = 0
   private settled = false
+  private tileSize = 256
+  private downX = 0
+  private downY = 0
+  private moved = false
+  onSelect: ((id: number | null) => void) | null = null
 
   constructor(loadTexture: TextureLoader = (url) => Assets.load(url)) {
     this.loadTexture = loadTexture
@@ -37,10 +43,20 @@ export class Scene {
 
   async setSprites(bundle: Bundle, baseUrl: string): Promise<void> {
     this.transitions.clear()
+    this.tileSize = bundle.tileSize
     this.sprites = await buildSprites(bundle, this.world, this.loadTexture, baseUrl)
     for (const [id, sp] of this.sprites) {
       this.transitions.register(id, { x: sp.position.x, y: sp.position.y, scale: sp.scale.x, alpha: 1 })
     }
+  }
+
+  pick(sx: number, sy: number): number | null {
+    const world = screenToWorld(this.cam, sx, sy, this.viewport())
+    const entries: HitEntry[] = []
+    for (const [id, sp] of this.sprites) {
+      entries.push({ id, x: sp.position.x, y: sp.position.y, alpha: sp.alpha })
+    }
+    return hitTest(world.x, world.y, entries, this.tileSize)
   }
 
   setLayout(targets: Map<number, LayoutTarget>, visible: Set<number>, animate = true): void {
@@ -111,16 +127,26 @@ export class Scene {
 
   private onPointerDown = (e: PointerEvent): void => {
     this.dragging = true
+    this.moved = false
     this.lastX = e.clientX
     this.lastY = e.clientY
+    this.downX = e.clientX
+    this.downY = e.clientY
   }
 
   private onPointerUp = (): void => {
+    if (this.dragging && !this.moved) {
+      const rect = this.app.canvas.getBoundingClientRect()
+      this.onSelect?.(this.pick(this.downX - rect.left, this.downY - rect.top))
+    }
     this.dragging = false
   }
 
   private onPointerMove = (e: PointerEvent): void => {
     if (!this.dragging) return
+    if (!this.moved && Math.hypot(e.clientX - this.downX, e.clientY - this.downY) > 3) {
+      this.moved = true
+    }
     this.cam = panBy(this.cam, e.clientX - this.lastX, e.clientY - this.lastY)
     this.lastX = e.clientX
     this.lastY = e.clientY
