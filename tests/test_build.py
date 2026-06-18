@@ -95,3 +95,37 @@ def test_coerce_non_finite_floats_become_none():
 
     assert _coerce(float("inf")) is None
     assert _coerce(float("-inf")) is None
+
+
+def test_build_writes_detail_for_imaged_items(tmp_path):
+    out = build(
+        _df(tmp_path),
+        name_col="name",
+        image_col="photo",
+        card_fields=["name", "age"],
+        out_dir=tmp_path / "site",
+    )
+    data = json.loads((out / "data.json").read_text())
+    assert data["version"] == 2
+    # _df row 0 has a real PNG; rows 1 ("") and 2 ("missing.png") are generated
+    assert data["items"][0]["detail"] == "detail/0.png"
+    assert (out / "detail" / "0.png").exists()
+    assert data["items"][1]["detail"] is None
+    assert data["items"][2]["detail"] is None
+
+
+def test_build_single_file_inlines_detail(tmp_path):
+    out = build(
+        _df(tmp_path),
+        name_col="name",
+        image_col="photo",
+        out_dir=tmp_path / "site",
+        single_file=True,
+    )
+    html = out.read_text()
+    import re
+
+    m = re.search(r"<script id='pview-data' type='application/json'>(.*?)</script>", html, re.S)
+    data = json.loads(m.group(1))
+    assert data["items"][0]["detail"].startswith("data:image/png;base64,")
+    assert data["items"][1]["detail"] is None

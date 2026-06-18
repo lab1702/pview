@@ -59,6 +59,7 @@ def build_with_summary(
 
     tiles = []
     items = []
+    details: dict[int, tuple[bytes, str]] = {}
     n_generated = 0
     n_errors = 0
 
@@ -88,6 +89,9 @@ def build_with_summary(
             n_errors += 1
             logger.warning("item %d image failed: %s", pos, loaded.error)
 
+        if loaded.original is not None and loaded.ext is not None:
+            details[pos] = (loaded.original, loaded.ext)
+
         values = {c: _coerce(row[c]) for c in df.columns if c != image_col}
         items.append({"id": pos, "values": values})
 
@@ -105,6 +109,7 @@ def build_with_summary(
         card_fields=card_fields,
         tile_size=tile_size,
         single_file=single_file,
+        details=details,
     )
     summary = BuildSummary(len(df), n_generated, n_errors, len(atlas_images))
     logger.info(
