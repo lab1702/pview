@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 VALID_TYPES = {"numeric", "date", "category", "text"}
@@ -46,10 +47,13 @@ def _build_facet(name: str, series: pd.Series, forced: str | None, category_thre
         ftype = "text"
 
     if ftype == "numeric":
-        s = pd.to_numeric(series, errors="coerce").dropna()
-        # No usable values (empty column, or a forced type the data can't satisfy)
-        # would yield NaN bounds, which serialize to invalid JSON and break the
-        # viewer on load. Degrade to a plain text facet instead.
+        # Drop NaN *and* ±inf: both serialize to invalid JSON (NaN / Infinity under
+        # json.dumps' default allow_nan), which breaks the viewer's JSON.parse on
+        # load. inf survives dropna(), so a column containing 'inf' (or a float
+        # overflow) must be filtered explicitly here. No usable values left (empty
+        # column, all-infinite, or a forced type the data can't satisfy) degrades
+        # to a plain text facet instead.
+        s = pd.to_numeric(series, errors="coerce").replace([np.inf, -np.inf], np.nan).dropna()
         if s.empty:
             return Facet(name, "text")
         return Facet(name, "numeric", min=_num(s.min()), max=_num(s.max()))

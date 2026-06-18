@@ -126,6 +126,66 @@ def test_default_http_get_refuses_internal_url():
         _default_http_get("http://169.254.169.254/latest/meta-data/")
 
 
+def test_public_ip_or_raise_rejects_host_with_any_internal_ip(monkeypatch):
+    # A host resolving to BOTH a public and an internal address must be rejected
+    # wholesale, not connected to the public one.
+    import socket as _socket
+
+    import pytest
+
+    import pview.images as images
+
+    def fake_gai(host, port, *a, **k):
+        return [
+            (_socket.AF_INET, _socket.SOCK_STREAM, 6, "", ("93.184.216.34", port or 80)),
+            (_socket.AF_INET, _socket.SOCK_STREAM, 6, "", ("127.0.0.1", port or 80)),
+        ]
+
+    monkeypatch.setattr(images.socket, "getaddrinfo", fake_gai)
+    with pytest.raises(ValueError, match="unsafe or non-public"):
+        images._public_ip_or_raise("http://mixed.example.com/x.png")
+
+
+def test_default_http_get_pins_validated_ip_against_dns_rebinding(monkeypatch):
+    # The host resolves PUBLIC during validation, then REBINDS to loopback for
+    # the fetch. The connection must target the validated public IP, never the
+    # rebound internal one.
+    import socket as _socket
+
+    import httpcore
+    import pytest
+
+    import pview.images as images
+
+    results = iter(
+        [
+            [(_socket.AF_INET, _socket.SOCK_STREAM, 6, "", ("93.184.216.34", 80))],  # validation
+            [(_socket.AF_INET, _socket.SOCK_STREAM, 6, "", ("127.0.0.1", 80))],  # rebind
+        ]
+    )
+
+    def fake_gai(host, port, *a, **k):
+        try:
+            return next(results)
+        except StopIteration:  # any further lookups also rebound
+            return [(_socket.AF_INET, _socket.SOCK_STREAM, 6, "", ("127.0.0.1", 80))]
+
+    monkeypatch.setattr(images.socket, "getaddrinfo", fake_gai)
+
+    captured = {}
+
+    def fake_connect(self, host, port, **kwargs):
+        captured["host"] = host
+        raise RuntimeError("stop before real connect")
+
+    monkeypatch.setattr(httpcore.SyncBackend, "connect_tcp", fake_connect)
+
+    with pytest.raises(Exception):
+        images._default_http_get("http://rebind.example.com/a.png")
+
+    assert captured["host"] == "93.184.216.34"  # pinned to the validated IP, not 127.0.0.1
+
+
 def test_url_retries_once_then_succeeds():
     calls = []
 
