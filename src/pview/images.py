@@ -30,6 +30,11 @@ class LoadedImage:
 
 
 def _ext_for(img_format: str | None, local_path: str | None) -> str:
+    # Prefer the source filename's suffix; else map the decoded PIL format.
+    # ".png" is a deliberate last-resort default when neither is known (rare:
+    # a successfully decoded image almost always reports img.format). Stored
+    # detail files/URIs are content-sniffed by browsers, so a mismatched
+    # extension here renders correctly regardless.
     if local_path:
         suffix = Path(local_path).suffix.lower()
         if suffix:

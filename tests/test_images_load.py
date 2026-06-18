@@ -11,6 +11,14 @@ def _png_bytes(color=(10, 20, 30)):
     return buf.getvalue()
 
 
+def test_ext_for_prefers_suffix_then_format_then_default():
+    from pview.images import _ext_for
+
+    assert _ext_for("PNG", "/a/b/photo.JPG") == ".jpg"   # path suffix wins, lowercased
+    assert _ext_for("JPEG", None) == ".jpg"              # decoded format used when no path
+    assert _ext_for(None, None) == ".png"                # last-resort default (both unknown)
+
+
 def test_local_image_is_loaded_and_resized(tmp_path):
     p = tmp_path / "x.png"
     p.write_bytes(_png_bytes())
