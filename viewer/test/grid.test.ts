@@ -27,4 +27,16 @@ describe('gridLayout', () => {
     expect(r.targets.size).toBe(0)
     expect(r.bounds).toEqual({ w: 0, h: 0 })
   })
+
+  it('guards against non-positive columns', () => {
+    const r = gridLayout([0, 1, 2], { columns: 0, tileSize: 64, gap: 6 })
+    expect(r.targets.size).toBe(0)
+    expect(r.bounds).toEqual({ w: 0, h: 0 })
+  })
+
+  it('computes bounds for a multi-row grid with a partial last row', () => {
+    // 5 ids, 2 columns => 3 rows (last row partial); width uses full columns
+    const { bounds } = gridLayout([0, 1, 2, 3, 4], { columns: 2, tileSize: 64, gap: 6 })
+    expect(bounds).toEqual({ w: 134, h: 204 }) // 2*70-6 wide, 3*70-6 tall
+  })
 })
