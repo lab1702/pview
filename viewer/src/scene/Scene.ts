@@ -3,12 +3,14 @@ import type { Bundle } from '../core/bundle'
 import type { LayoutTarget } from '../core/layout/grid'
 import { buildSprites, type TextureLoader } from './sprites'
 import { type Camera, fitToBounds, panBy, zoomAt } from './camera'
+import { TransitionController } from './transitions'
 
 export class Scene {
   private app = new Application()
   private world = new Container()
   private sprites = new Map<number, Sprite>()
   private cam: Camera = { x: 0, y: 0, zoom: 1 }
+  private transitions = new TransitionController()
   private loadTexture: TextureLoader
   private dragging = false
   private lastX = 0
@@ -22,20 +24,32 @@ export class Scene {
     await this.app.init({ resizeTo: el, backgroundAlpha: 0, antialias: true, preference: 'webgl' })
     el.appendChild(this.app.canvas)
     this.app.stage.addChild(this.world)
+    this.app.ticker.add(this.onTick)
     this.attachInteraction()
     window.addEventListener('resize', this.applyCamera)
   }
 
   async setSprites(bundle: Bundle, baseUrl: string): Promise<void> {
     this.sprites = await buildSprites(bundle, this.world, this.loadTexture, baseUrl)
+    for (const [id, sp] of this.sprites) {
+      this.transitions.register(id, { x: sp.position.x, y: sp.position.y, scale: sp.scale.x, alpha: 1 })
+    }
   }
 
-  placeSprites(targets: Map<number, LayoutTarget>): void {
-    for (const [id, t] of targets) {
-      const sp = this.sprites.get(id)
-      if (!sp) continue
-      sp.position.set(t.x, t.y)
-      sp.scale.set(t.scale)
+  setLayout(targets: Map<number, LayoutTarget>, visible: Set<number>, animate = true): void {
+    this.transitions.setTargets(targets, visible)
+    if (!animate) this.transitions.snap()
+  }
+
+  private onTick = (): void => {
+    this.transitions.tick(this.app.ticker.deltaMS)
+    for (const [id, sp] of this.sprites) {
+      const s = this.transitions.get(id)
+      if (!s) continue
+      sp.position.set(s.x, s.y)
+      sp.scale.set(s.scale)
+      sp.alpha = s.alpha
+      sp.visible = s.alpha > 0.01
     }
   }
 

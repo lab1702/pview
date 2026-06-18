@@ -30,7 +30,7 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
           bundle.items.map((it) => it.id),
           { columns, tileSize: bundle.tileSize, gap: Math.round(bundle.tileSize * 0.08) },
         )
-        scene.placeSprites(targets)
+        scene.setLayout(targets, new Set(bundle.items.map((it) => it.id)), false)
         scene.frame(bounds)
       } catch (err) {
         // Tear down any partially-mounted scene before replacing the host, and
