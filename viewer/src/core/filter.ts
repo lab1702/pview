@@ -20,21 +20,31 @@ function passes(item: Item, byName: Map<string, Facet>, state: FilterState): boo
     if (constraint === undefined) continue
     const facet = byName.get(name)
     if (!facet) continue
-    const value = item.values[name]
-    if (facet.type === 'category') {
-      const set = constraint as CategoryConstraint
-      if (set.size === 0) continue
-      if (!set.has(String(value))) return false
-    } else if (facet.type === 'numeric') {
-      const { min, max } = constraint as { min: number; max: number }
-      const v = Number(value)
-      if (Number.isNaN(v) || v < min || v > max) return false
-    } else if (facet.type === 'date') {
-      const { min, max } = constraint as { min: string; max: string }
-      const v = String(value)
-      if (v < min || v > max) return false
-    }
-    // text facets are not filtered here
+    if (!passesConstraint(item, facet, constraint)) return false
   }
+  return true
+}
+
+/** Whether a single facet's constraint admits this item. An empty category set
+ *  (and text facets) impose no constraint. Shared by applyFilters and the
+ *  faceted-count pass so both agree on what "passes" means. */
+export function passesConstraint(item: Item, facet: Facet, constraint: Constraint): boolean {
+  const value = item.values[facet.name]
+  if (facet.type === 'category') {
+    const set = constraint as CategoryConstraint
+    if (set.size === 0) return true
+    return set.has(String(value))
+  }
+  if (facet.type === 'numeric') {
+    const { min, max } = constraint as { min: number; max: number }
+    const v = Number(value)
+    return !(Number.isNaN(v) || v < min || v > max)
+  }
+  if (facet.type === 'date') {
+    const { min, max } = constraint as { min: string; max: string }
+    const v = String(value)
+    return !(v < min || v > max)
+  }
+  // text facets are not filtered
   return true
 }

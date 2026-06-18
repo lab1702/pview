@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import colorsys
 import hashlib
+import ipaddress
+import socket
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
 from typing import Callable
+from urllib.parse import urlparse
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
@@ -89,12 +92,61 @@ def generate_card(
     return img
 
 
+_MAX_REDIRECTS = 5
+
+
+def _is_safe_url(url: str) -> bool:
+    # SSRF guard for the *default* fetcher: only http(s), and only hosts that
+    # resolve entirely to public addresses. This blocks build inputs that point
+    # at cloud metadata (169.254.169.254), localhost, or private ranges. Callers
+    # that genuinely need internal hosts can inject their own ``http_get``.
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        return False
+    host = parsed.hostname
+    if not host:
+        return False
+    try:
+        infos = socket.getaddrinfo(host, parsed.port, proto=socket.IPPROTO_TCP)
+    except (socket.gaierror, UnicodeError, ValueError):
+        return False
+    if not infos:
+        return False
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0])
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_reserved
+            or ip.is_multicast
+            or ip.is_unspecified
+        ):
+            return False
+    return True
+
+
 def _default_http_get(url: str) -> bytes:
     import httpx
 
-    resp = httpx.get(url, timeout=10.0, follow_redirects=True)
-    resp.raise_for_status()
-    return resp.content
+    # Follow redirects manually so every hop is re-validated against the SSRF
+    # guard — an allowed public URL must not be able to bounce us to an
+    # internal one.
+    current = url
+    with httpx.Client(timeout=10.0, follow_redirects=False) as client:
+        for _ in range(_MAX_REDIRECTS + 1):
+            if not _is_safe_url(current):
+                raise ValueError(f"refusing to fetch unsafe or non-public URL: {current!r}")
+            resp = client.get(current)
+            if resp.is_redirect:
+                location = resp.headers.get("location")
+                if not location:
+                    break
+                current = str(resp.url.join(location))
+                continue
+            resp.raise_for_status()
+            return resp.content
+    raise ValueError(f"too many redirects fetching {url!r}")
 
 
 def _get_with_retry(url: str, http_get: Callable[[str], bytes]) -> bytes:

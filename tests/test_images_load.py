@@ -100,6 +100,32 @@ def test_url_failure_generates_card_with_error():
     assert r.tile.size == (32, 32) and r.tile.mode == "RGBA"
 
 
+def test_is_safe_url_rejects_internal_and_non_http():
+    from pview.images import _is_safe_url
+
+    # public IP literals (no DNS needed) are allowed
+    assert _is_safe_url("http://8.8.8.8/img.png") is True
+    assert _is_safe_url("https://1.1.1.1/img.png") is True
+    # cloud metadata, loopback, private, link-local -> blocked
+    assert _is_safe_url("http://169.254.169.254/latest/meta-data/") is False
+    assert _is_safe_url("http://127.0.0.1/x") is False
+    assert _is_safe_url("http://[::1]/x") is False
+    assert _is_safe_url("http://10.1.2.3/x") is False
+    assert _is_safe_url("http://192.168.0.5/x") is False
+    # non-http(s) schemes -> blocked
+    assert _is_safe_url("ftp://8.8.8.8/x") is False
+    assert _is_safe_url("file:///etc/passwd") is False
+
+
+def test_default_http_get_refuses_internal_url():
+    import pytest
+
+    from pview.images import _default_http_get
+
+    with pytest.raises(ValueError, match="unsafe or non-public"):
+        _default_http_get("http://169.254.169.254/latest/meta-data/")
+
+
 def test_url_retries_once_then_succeeds():
     calls = []
 
