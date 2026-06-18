@@ -68,6 +68,27 @@ pview build people.csv \
 Add `--single-file` to emit one portable `index.html` (assets base64-inlined)
 instead of a folder — best for small collections.
 
+## Example
+
+[`example/`](example) is a ready-to-build dataset: 10 people, 9 images at mixed
+sizes, and one person with no image. From that directory:
+
+```bash
+pview build people.csv \
+  --name-col name \
+  --image-col photo \
+  --card-fields name,department,city \
+  --facet department=category --facet city=category \
+  --title "pview demo — 10 people" \
+  --out ./site
+# Built 10 items (1 generated, 0 image errors, 1 atlases) -> ./site
+```
+
+It shows the pieces working together: every image is center-cropped to a square
+tile (so the varied aspect ratios demonstrate scaling), the one blank `photo`
+becomes a generated text card, and the columns infer as numeric/date/category
+facets. See [`example/README.md`](example/README.md) for details.
+
 ## How it works
 
 | Stage | What it does |

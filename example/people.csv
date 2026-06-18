@@ -1,0 +1,11 @@
+name,age,department,city,start_date,salary,photo
+Ada Lovelace,36,Engineering,London,2018-03-12,128000,images/01-horizon.png
+Bao Nguyen,41,Design,Hanoi,2016-07-01,134000,images/02-skyscraper.png
+Carlos Mendez,28,Engineering,Madrid,2021-09-20,96000,images/03-target.png
+Dana Whitfield,52,Operations,Chicago,2009-01-15,152000,images/04-checker.jpg
+Elif Demir,33,Marketing,Istanbul,2019-11-05,101000,images/05-waves.png
+Farah Khan,45,Engineering,Karachi,2014-05-30,141000,images/06-confetti.png
+Gustav Holm,39,Design,Copenhagen,2017-02-18,118000,images/07-blueprint.png
+Hana Sato,30,Operations,Osaka,2020-08-09,99000,images/08-sunburst.jpg
+Ivan Petrov,48,Marketing,Belgrade,2012-10-22,127000,images/09-leaf.png
+Júlia Costa,26,Engineering,Lisbon,2022-06-14,88000,
