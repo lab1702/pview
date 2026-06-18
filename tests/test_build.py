@@ -1,4 +1,3 @@
-import io
 import json
 
 import pandas as pd
@@ -68,3 +67,24 @@ def test_missing_name_col_raises(tmp_path):
     import pytest
     with pytest.raises(ValueError):
         build(_df(tmp_path), name_col="nope", out_dir=tmp_path / "s")
+
+
+def test_coerce_serializes_datetimes_to_iso():
+    import datetime
+    import numpy as np
+    from pview import _coerce
+
+    assert _coerce(datetime.date(2020, 1, 1)) == "2020-01-01"
+    assert _coerce(datetime.datetime(2020, 1, 1, 12, 30)) == "2020-01-01T12:30:00"
+    # numpy.datetime64 -> .item() -> datetime.date (day resolution)
+    assert _coerce(np.datetime64("2020-01-01")) == "2020-01-01"
+
+
+def test_nullable_na_image_generates_card_without_error(tmp_path):
+    import pandas as pd
+    df = pd.DataFrame(
+        {"name": ["A", "B"], "photo": pd.array([pd.NA, pd.NA], dtype="string")}
+    )
+    _, summary = build_with_summary(df, name_col="name", image_col="photo", out_dir=tmp_path / "s")
+    assert summary.n_generated == 2
+    assert summary.n_image_errors == 0

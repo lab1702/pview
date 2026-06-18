@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import logging
 from dataclasses import dataclass
 from pathlib import Path
@@ -64,8 +65,12 @@ def build_with_summary(
         name = _fmt(row[name_col])
         fields = [(c, _fmt(row[c])) for c in card_fields if c in df.columns]
         img_value = None if image_col is None else row[image_col]
-        if isinstance(img_value, float) and pd.isna(img_value):
-            img_value = None
+        if img_value is not None:
+            try:
+                if pd.isna(img_value):
+                    img_value = None
+            except (TypeError, ValueError):
+                pass
         tile, generated, err = load_tile(
             img_value,
             item_id=pos,
@@ -114,7 +119,9 @@ def _coerce(v):
     if isinstance(v, pd.Timestamp):
         return v.date().isoformat()
     if hasattr(v, "item"):
-        return v.item()
+        v = v.item()
+    if isinstance(v, (datetime.datetime, datetime.date)):
+        return v.isoformat()
     return v
 
 
