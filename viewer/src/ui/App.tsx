@@ -61,8 +61,6 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
       return { targets: g.targets, bounds: g.bounds }
     }
 
-    let lastMode = ''
-
     void (async () => {
       try {
         await scene.mount(host)
@@ -77,18 +75,15 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
         const first = computeLayout()
         scene.setLayout(first.targets, new Set(state.visibleIds.value), false)
         scene.frame(first.bounds, first.center)
-        lastMode = `${state.view.value}:${state.histogramFacet.value}`
 
-        // re-layout on filter/sort/search/view changes; re-frame only on mode change
+        // Re-layout on filter/sort/search/view changes, then re-fit the camera
+        // every time so all cards stay centered and in view — the same framing
+        // used on first load, whether cards were added, removed, or moved.
         disposers.push(
           effect(() => {
             const r = computeLayout()
             scene.setLayout(r.targets, new Set(state.visibleIds.value))
-            const mode = `${state.view.value}:${state.histogramFacet.value}`
-            if (mode !== lastMode) {
-              scene.frame(r.bounds, r.center)
-              lastMode = mode
-            }
+            scene.frame(r.bounds, r.center, true)
           }),
         )
         // selection -> camera focus / reset

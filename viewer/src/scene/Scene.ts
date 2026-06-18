@@ -158,17 +158,24 @@ export class Scene {
     }
   }
 
-  frame(bounds: { w: number; h: number }, center?: { x: number; y: number }): void {
-    // An explicit re-frame is authoritative: cancel any in-flight focus tween
-    // and drop the stale pre-focus camera/selection, so a focused→re-frame
-    // (e.g. switching grid↔histogram while a card is focused) lands on the NEW
-    // layout's framing rather than tweening back to the old one.
-    this.camFrom = null
-    this.camTo = null
+  frame(bounds: { w: number; h: number }, center?: { x: number; y: number }, animate = false): void {
+    // An explicit re-frame is authoritative: drop the stale pre-focus
+    // camera/selection so a focused→re-frame (e.g. switching grid↔histogram, or
+    // a filter/sort change while a card is focused) lands on the NEW layout's
+    // framing rather than tweening back to the old one.
     this.prefocusCam = null
     this.focusedId = null
-    this.cam = fitToBounds(bounds, this.viewport(), 0.9, center)
-    this.applyCamera()
+    const target = fitToBounds(bounds, this.viewport(), 0.9, center)
+    if (animate) {
+      // Glide to the new framing. startCamTween overwrites any in-flight focus
+      // tween, so the camera smoothly retargets instead of jumping.
+      this.startCamTween(target)
+    } else {
+      this.camFrom = null
+      this.camTo = null
+      this.cam = target
+      this.applyCamera()
+    }
   }
 
   private viewport() {
