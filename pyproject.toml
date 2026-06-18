@@ -6,7 +6,10 @@ build-backend = "hatchling.build"
 name = "pview"
 version = "0.1.0"
 description = "PivotViewer-style interactive collection viewer for Python"
+readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = ["pandas", "pillow", "httpx"]
 
 [project.optional-dependencies]
