@@ -13,6 +13,8 @@ it('produces nice 0..1 edges for [0,1]', () => {
   expect(edges[0]).toBe(0)
   expect(edges[edges.length - 1]).toBe(1)
   expect(edges.length).toBe(11)
+  // interior value is float-noise-free (0.1*3 would otherwise be 0.30000000000000004)
+  expect(edges[3]).toBe(0.3)
 })
 
 it('returns a single bucket for a degenerate range', () => {
