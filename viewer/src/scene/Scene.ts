@@ -159,6 +159,14 @@ export class Scene {
   }
 
   frame(bounds: { w: number; h: number }, center?: { x: number; y: number }): void {
+    // An explicit re-frame is authoritative: cancel any in-flight focus tween
+    // and drop the stale pre-focus camera/selection, so a focused→re-frame
+    // (e.g. switching grid↔histogram while a card is focused) lands on the NEW
+    // layout's framing rather than tweening back to the old one.
+    this.camFrom = null
+    this.camTo = null
+    this.prefocusCam = null
+    this.focusedId = null
     this.cam = fitToBounds(bounds, this.viewport(), 0.9, center)
     this.applyCamera()
   }
