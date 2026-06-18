@@ -4,9 +4,12 @@ import { copyFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 // Copy the production HTML template into the build output as index.html.
+// `apply: 'build'` scopes it to `vite build` only — otherwise its closeBundle
+// hook fires on every Vitest run and clobbers the committed placeholder.
 function emitIndexHtml() {
   return {
     name: 'emit-index-html',
+    apply: 'build' as const,
     closeBundle() {
       copyFileSync(
         resolve(import.meta.dirname, 'template.html'),
