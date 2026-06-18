@@ -2,11 +2,44 @@ from __future__ import annotations
 
 import colorsys
 import hashlib
+from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
 from typing import Callable
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
+
+
+_FORMAT_EXT = {
+    "JPEG": ".jpg",
+    "PNG": ".png",
+    "GIF": ".gif",
+    "WEBP": ".webp",
+    "BMP": ".bmp",
+    "TIFF": ".tiff",
+}
+
+
+@dataclass
+class LoadedImage:
+    tile: Image.Image
+    generated: bool
+    error: str | None
+    original: bytes | None = None
+    ext: str | None = None
+
+
+def _ext_for(img_format: str | None, local_path: str | None) -> str:
+    # Prefer the source filename's suffix; else map the decoded PIL format.
+    # ".png" is a deliberate last-resort default when neither is known (rare:
+    # a successfully decoded image almost always reports img.format). Stored
+    # detail files/URIs are content-sniffed by browsers, so a mismatched
+    # extension here renders correctly regardless.
+    if local_path:
+        suffix = Path(local_path).suffix.lower()
+        if suffix:
+            return suffix
+    return _FORMAT_EXT.get((img_format or "").upper(), ".png")
 
 
 def _default_font_path() -> str:
@@ -100,22 +133,35 @@ def load_tile(
     font_path: str | None = None,
     cache_dir: Path | None = None,
     http_get: Callable[[str], bytes] | None = None,
-) -> tuple[Image.Image, bool, str | None]:
+) -> LoadedImage:
     import io
 
     blank = value is None or (isinstance(value, str) and value.strip() == "")
     if not blank:
         http_get = http_get or _default_http_get
         try:
-            if str(value).startswith(("http://", "https://")):
-                raw = _fetch_url(str(value), cache_dir, http_get)
-                img = Image.open(io.BytesIO(raw))
+            sval = str(value)
+            if sval.startswith(("http://", "https://")):
+                raw = _fetch_url(sval, cache_dir, http_get)
+                local_path = None
             else:
-                img = Image.open(value)
+                raw = Path(sval).read_bytes()
+                local_path = sval
+            img = Image.open(io.BytesIO(raw))
             img.load()
-            return _normalize(img, tile_size), False, None
+            return LoadedImage(
+                tile=_normalize(img, tile_size),
+                generated=False,
+                error=None,
+                original=raw,
+                ext=_ext_for(img.format, local_path),
+            )
         except Exception as exc:  # degrade to generated card
             card = generate_card(item_id, name, fields, tile_size, font_path)
-            return card, True, str(exc)
+            return LoadedImage(tile=card, generated=True, error=str(exc))
 
-    return generate_card(item_id, name, fields, tile_size, font_path), True, None
+    return LoadedImage(
+        tile=generate_card(item_id, name, fields, tile_size, font_path),
+        generated=True,
+        error=None,
+    )

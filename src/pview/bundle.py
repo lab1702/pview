@@ -13,13 +13,25 @@ from PIL import Image
 from .facets import Facet
 
 
+_EXT_MIME = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+    ".bmp": "image/bmp",
+    ".tiff": "image/tiff",
+    ".tif": "image/tiff",
+}
+
+
 def _viewer_dir():
     return resources.files("pview").joinpath("viewer_assets")
 
 
 def _data_dict(title, facets, items, card_fields, tile_size, atlas_meta):
     return {
-        "version": 1,
+        "version": 2,
         "title": title,
         "tileSize": tile_size,
         "facets": [f.to_dict() for f in facets],
@@ -45,8 +57,10 @@ def write_bundle(
     card_fields: list[str],
     tile_size: int,
     single_file: bool = False,
+    details: dict[int, tuple[bytes, str]] | None = None,
 ) -> Path:
     viewer = _viewer_dir()
+    details = details or {}
 
     if single_file:
         atlas_uris = []
@@ -57,6 +71,15 @@ def write_bundle(
             {"file": atlas_uris[i], "width": img.width, "height": img.height}
             for i, img in enumerate(atlas_images)
         ]
+        for item in items:
+            d = details.get(item["id"])
+            if d is not None:
+                raw, ext = d
+                mime = _EXT_MIME.get(ext.lower(), "application/octet-stream")
+                b64 = base64.b64encode(raw).decode()
+                item["detail"] = f"data:{mime};base64,{b64}"
+            else:
+                item["detail"] = None
         data = _data_dict(title, facets, items, card_fields, tile_size, atlas_meta)
         app_js = viewer.joinpath("app.js").read_text()
         app_css = viewer.joinpath("app.css").read_text()
@@ -89,6 +112,18 @@ def write_bundle(
         fname = f"atlas/atlas_{i}.png"
         img.save(out / fname)
         atlas_meta.append({"file": fname, "width": img.width, "height": img.height})
+
+    detail_dir = out / "detail"
+    for item in items:
+        d = details.get(item["id"])
+        if d is not None:
+            raw, ext = d
+            detail_dir.mkdir(exist_ok=True)
+            fname = f"detail/{item['id']}{ext}"
+            (out / fname).write_bytes(raw)
+            item["detail"] = fname
+        else:
+            item["detail"] = None
 
     data = _data_dict(title, facets, items, card_fields, tile_size, atlas_meta)
     (out / "data.json").write_text(json.dumps(data, indent=2))
