@@ -16,7 +16,13 @@ async function loadBundleJson(): Promise<{ json: unknown; baseUrl: string }> {
 
 function showError(message: string): void {
   const el = document.getElementById('app')
-  if (el) el.innerHTML = `<div class="pview-error">${message}</div>`
+  if (!el) return
+  // textContent (not innerHTML): the message may contain values from an
+  // untrusted bundle (e.g. a bad atlas path echoed by a loader error).
+  const div = document.createElement('div')
+  div.className = 'pview-error'
+  div.textContent = message
+  el.replaceChildren(div)
 }
 
 async function boot(): Promise<void> {

@@ -11,11 +11,17 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
     if (!host) return
     const scene = new Scene()
     let disposed = false
+    let destroyed = false
+    const teardown = () => {
+      if (destroyed) return
+      destroyed = true
+      scene.destroy()
+    }
     void (async () => {
       try {
         await scene.mount(host)
         if (disposed) {
-          scene.destroy()
+          teardown()
           return
         }
         await scene.setSprites(bundle, baseUrl)
@@ -27,12 +33,19 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
         scene.placeSprites(targets)
         scene.frame(bounds)
       } catch (err) {
-        host.innerHTML = `<div class="pview-error">pview: ${(err as Error).message}</div>`
+        // Tear down any partially-mounted scene before replacing the host, and
+        // use textContent (not innerHTML) since the message may carry untrusted
+        // bundle-derived text.
+        teardown()
+        const div = document.createElement('div')
+        div.className = 'pview-error'
+        div.textContent = `pview: ${(err as Error).message}`
+        host.replaceChildren(div)
       }
     })()
     return () => {
       disposed = true
-      scene.destroy()
+      teardown()
     }
   }, [bundle, baseUrl])
 
