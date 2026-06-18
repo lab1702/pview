@@ -50,16 +50,26 @@ def _default_http_get(url: str) -> bytes:
     return resp.content
 
 
+def _get_with_retry(url: str, http_get: Callable[[str], bytes]) -> bytes:
+    last_exc: Exception | None = None
+    for _ in range(2):  # one initial attempt + one retry
+        try:
+            return http_get(url)
+        except Exception as exc:  # noqa: BLE001 - retried, then re-raised
+            last_exc = exc
+    raise last_exc  # type: ignore[misc]
+
+
 def _fetch_url(url: str, cache_dir: Path | None, http_get: Callable[[str], bytes]) -> bytes:
     if cache_dir is not None:
         cache_dir.mkdir(parents=True, exist_ok=True)
         key = cache_dir / (hashlib.sha256(url.encode()).hexdigest() + ".bin")
         if key.exists():
             return key.read_bytes()
-        data = http_get(url)
+        data = _get_with_retry(url, http_get)
         key.write_bytes(data)
         return data
-    return http_get(url)
+    return _get_with_retry(url, http_get)
 
 
 def _normalize(img: Image.Image, tile_size: int) -> Image.Image:
