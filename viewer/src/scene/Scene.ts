@@ -10,6 +10,9 @@ export class Scene {
   private sprites = new Map<number, Sprite>()
   private cam: Camera = { x: 0, y: 0, zoom: 1 }
   private loadTexture: TextureLoader
+  private dragging = false
+  private lastX = 0
+  private lastY = 0
 
   constructor(loadTexture: TextureLoader = (url) => Assets.load(url)) {
     this.loadTexture = loadTexture
@@ -54,40 +57,46 @@ export class Scene {
     )
   }
 
+  private onPointerDown = (e: PointerEvent): void => {
+    this.dragging = true
+    this.lastX = e.clientX
+    this.lastY = e.clientY
+  }
+
+  private onPointerUp = (): void => {
+    this.dragging = false
+  }
+
+  private onPointerMove = (e: PointerEvent): void => {
+    if (!this.dragging) return
+    this.cam = panBy(this.cam, e.clientX - this.lastX, e.clientY - this.lastY)
+    this.lastX = e.clientX
+    this.lastY = e.clientY
+    this.applyCamera()
+  }
+
+  private onWheel = (e: WheelEvent): void => {
+    e.preventDefault()
+    const rect = this.app.canvas.getBoundingClientRect()
+    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1
+    this.cam = zoomAt(this.cam, e.clientX - rect.left, e.clientY - rect.top, factor, this.viewport())
+    this.applyCamera()
+  }
+
   private attachInteraction(): void {
     const canvas = this.app.canvas
-    let dragging = false
-    let lastX = 0
-    let lastY = 0
-    canvas.addEventListener('pointerdown', (e) => {
-      dragging = true
-      lastX = e.clientX
-      lastY = e.clientY
-    })
-    window.addEventListener('pointerup', () => {
-      dragging = false
-    })
-    window.addEventListener('pointermove', (e) => {
-      if (!dragging) return
-      this.cam = panBy(this.cam, e.clientX - lastX, e.clientY - lastY)
-      lastX = e.clientX
-      lastY = e.clientY
-      this.applyCamera()
-    })
-    canvas.addEventListener(
-      'wheel',
-      (e) => {
-        e.preventDefault()
-        const rect = canvas.getBoundingClientRect()
-        const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1
-        this.cam = zoomAt(this.cam, e.clientX - rect.left, e.clientY - rect.top, factor, this.viewport())
-        this.applyCamera()
-      },
-      { passive: false },
-    )
+    canvas.addEventListener('pointerdown', this.onPointerDown)
+    canvas.addEventListener('wheel', this.onWheel, { passive: false })
+    window.addEventListener('pointerup', this.onPointerUp)
+    window.addEventListener('pointermove', this.onPointerMove)
   }
 
   destroy(): void {
+    const canvas = this.app.canvas
+    canvas.removeEventListener('pointerdown', this.onPointerDown)
+    canvas.removeEventListener('wheel', this.onWheel)
+    window.removeEventListener('pointerup', this.onPointerUp)
+    window.removeEventListener('pointermove', this.onPointerMove)
     window.removeEventListener('resize', this.applyCamera)
     this.app.destroy(true)
   }

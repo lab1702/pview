@@ -1,4 +1,4 @@
-import { Container, Rectangle, Sprite, Texture } from 'pixi.js'
+import { Container, Rectangle, Sprite, Texture, type TextureSource } from 'pixi.js'
 import type { Bundle } from '../core/bundle'
 import { resolveAtlasUrl } from './urls'
 
@@ -10,7 +10,7 @@ export async function buildSprites(
   loadTexture: TextureLoader,
   baseUrl: string,
 ): Promise<Map<number, Sprite>> {
-  const sources = []
+  const sources: TextureSource[] = []
   for (const atlas of bundle.atlases) {
     const tex = await loadTexture(resolveAtlasUrl(atlas.file, baseUrl))
     sources.push(tex.source)
