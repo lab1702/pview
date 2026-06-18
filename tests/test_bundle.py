@@ -25,7 +25,7 @@ def test_folder_bundle_structure(tmp_path):
     assert (out / "app.css").exists()
     assert (out / "atlas" / "atlas_0.png").exists()
     data = json.loads((out / "data.json").read_text())
-    assert data["version"] == 1
+    assert data["version"] == 2
     assert data["title"] == "People"
     assert data["tileSize"] == 64
     assert data["cardFields"] == ["name", "age"]
@@ -57,3 +57,32 @@ def test_single_file_embeds_atlas_data_uri(tmp_path):
     assert m is not None
     data = json.loads(m.group(1))
     assert data["atlases"][0]["file"].startswith("data:image/png;base64,")
+
+
+def test_folder_bundle_writes_detail_originals(tmp_path):
+    args = _args(tmp_path)
+    args["items"] = [
+        {"id": 0, "values": {"name": "Ada"}, "atlas": 0, "rect": [0, 0, 64, 64]},
+        {"id": 1, "values": {"name": "Bob"}, "atlas": 0, "rect": [0, 0, 64, 64]},
+    ]
+    args["details"] = {0: (b"\x89PNG-fake-bytes", ".png")}
+    out = write_bundle(**args)
+    data = json.loads((out / "data.json").read_text())
+    assert data["version"] == 2
+    assert (out / "detail" / "0.png").read_bytes() == b"\x89PNG-fake-bytes"
+    assert data["items"][0]["detail"] == "detail/0.png"
+    assert data["items"][1]["detail"] is None
+
+
+def test_single_file_inlines_detail_as_data_uri(tmp_path):
+    args = _args(tmp_path)
+    args["single_file"] = True
+    args["details"] = {0: (b"\x89PNG-fake-bytes", ".png")}
+    out = write_bundle(**args)
+    html = out.read_text()
+    import re
+
+    m = re.search(r"<script id='pview-data' type='application/json'>(.*?)</script>", html, re.S)
+    data = json.loads(m.group(1))
+    assert data["version"] == 2
+    assert data["items"][0]["detail"].startswith("data:image/png;base64,")
