@@ -21,8 +21,8 @@ the design.
 pip install .
 ```
 
-Runtime dependencies: `pandas`, `pillow`, `httpx` (and `openpyxl` for reading
-`.xlsx` via the CLI). Requires Python 3.11+.
+Runtime dependencies: `pandas`, `pillow`, `httpx`, and `openpyxl` (for reading
+`.xlsx` inputs). Requires Python 3.11+.
 
 ## Usage
 
@@ -103,7 +103,7 @@ card, and the columns infer as numeric/date/category facets. See
 ## Development
 
 ```bash
-pip install -e '.[dev,cli]'
+pip install -e '.[dev]'
 python -m pytest
 ```
 
