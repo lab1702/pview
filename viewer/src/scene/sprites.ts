@@ -31,10 +31,10 @@ export async function buildSprites(
   return sprites
 }
 
-/** Overlay the card name across the top of a tile. The label is a child of the
- *  sprite, so it pans, zooms, and fades together with its tile for free. White
- *  glyphs with a black outline and a soft drop shadow keep it readable over
- *  both light and dark images. */
+/** Overlay the card name in the top-left corner of a tile. The label is a child
+ *  of the sprite, so it pans, zooms, and fades together with its tile for free.
+ *  White glyphs with a black outline and a soft drop shadow keep it readable
+ *  over both light and dark images. */
 function addNameLabel(sprite: Sprite, name: string, tileSize: number): void {
   if (!name) return
   const pad = tileSize * 0.06
@@ -43,19 +43,19 @@ function addNameLabel(sprite: Sprite, name: string, tileSize: number): void {
     style: {
       fill: 0xffffff,
       fontFamily: 'sans-serif',
-      fontSize: Math.round(tileSize * 0.1),
+      fontSize: Math.round(tileSize * 0.08),
       fontWeight: '700',
-      align: 'center',
+      align: 'left',
       wordWrap: true,
       wordWrapWidth: tileSize - pad * 2,
       stroke: { color: 0x000000, width: Math.max(2, Math.round(tileSize * 0.014)) },
       dropShadow: { color: 0x000000, alpha: 0.9, blur: 4, distance: 0 },
     },
   })
-  label.anchor.set(0.5, 0)
+  label.anchor.set(0, 0)
   // Children ignore the sprite's anchor, so local (0,0) is the tile centre;
-  // -tileSize/2 + pad lifts the label to just inside the top edge.
-  label.position.set(0, -tileSize / 2 + pad)
+  // (-tileSize/2 + pad) on both axes pins the label just inside the top-left corner.
+  label.position.set(-tileSize / 2 + pad, -tileSize / 2 + pad)
   label.eventMode = 'none'
   sprite.addChild(label)
 }
