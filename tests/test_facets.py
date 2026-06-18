@@ -102,6 +102,25 @@ def test_forced_date_on_unparseable_degrades_to_text():
     assert facets["bio"].to_dict() == {"name": "bio", "type": "text"}
 
 
+def test_numeric_facet_drops_infinite_values():
+    # ±inf survives dropna() and would serialize to the bare token `Infinity`,
+    # which is invalid JSON and breaks the viewer's JSON.parse on load.
+    df = _df()
+    df["age"] = [36.0, float("inf"), 28.0]
+    facets = {f.name: f for f in infer_facets(df, name_col="name", image_col="photo")}
+    assert facets["age"].type == "numeric"
+    assert facets["age"].min == 28
+    assert facets["age"].max == 36  # inf excluded from the bound
+
+
+def test_all_infinite_numeric_degrades_to_text():
+    df = _df()
+    df["age"] = [float("inf"), float("-inf"), float("inf")]
+    facets = {f.name: f for f in infer_facets(df, name_col="name", image_col="photo")}
+    assert facets["age"].type == "text"
+    assert facets["age"].to_dict() == {"name": "age", "type": "text"}
+
+
 def test_facet_bounds_are_always_finite_json():
     import json
     import math

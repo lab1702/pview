@@ -95,23 +95,28 @@ def generate_card(
 _MAX_REDIRECTS = 5
 
 
-def _is_safe_url(url: str) -> bool:
+def _public_ip_or_raise(url: str) -> str:
     # SSRF guard for the *default* fetcher: only http(s), and only hosts that
     # resolve entirely to public addresses. This blocks build inputs that point
     # at cloud metadata (169.254.169.254), localhost, or private ranges. Callers
     # that genuinely need internal hosts can inject their own ``http_get``.
+    #
+    # Returns the validated IP to connect to (rather than just a bool) so the
+    # caller can pin the connection to that exact address. Resolving here and
+    # connecting somewhere that re-resolves would leave a DNS-rebinding/TOCTOU
+    # hole: a host could answer public to this check and private to the fetch.
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
-        return False
+        raise ValueError(f"refusing to fetch unsafe or non-public URL: {url!r}")
     host = parsed.hostname
     if not host:
-        return False
+        raise ValueError(f"refusing to fetch unsafe or non-public URL: {url!r}")
     try:
         infos = socket.getaddrinfo(host, parsed.port, proto=socket.IPPROTO_TCP)
     except (socket.gaierror, UnicodeError, ValueError):
-        return False
+        raise ValueError(f"refusing to fetch unsafe or non-public URL: {url!r}")
     if not infos:
-        return False
+        raise ValueError(f"refusing to fetch unsafe or non-public URL: {url!r}")
     for info in infos:
         ip = ipaddress.ip_address(info[4][0])
         if (
@@ -122,30 +127,62 @@ def _is_safe_url(url: str) -> bool:
             or ip.is_multicast
             or ip.is_unspecified
         ):
-            return False
-    return True
+            raise ValueError(f"refusing to fetch unsafe or non-public URL: {url!r}")
+    # Every resolved address is public; pin the connection to the first.
+    return infos[0][4][0]
+
+
+def _is_safe_url(url: str) -> bool:
+    try:
+        _public_ip_or_raise(url)
+        return True
+    except ValueError:
+        return False
+
+
+def _pinned_transport(ip: str):
+    # An httpx transport whose every TCP connection goes to ``ip`` regardless of
+    # the request host. We resolve+validate the host once (_public_ip_or_raise)
+    # and connect to that exact address, so a rebinding DNS server can't return a
+    # public IP to the SSRF check and a private one to the actual connection.
+    # TLS SNI and certificate verification still use the original hostname — only
+    # the socket's destination address is overridden.
+    import httpcore
+    import httpx
+
+    class _PinnedBackend(httpcore.SyncBackend):
+        def connect_tcp(self, host, port, timeout=None, local_address=None, socket_options=None):
+            return super().connect_tcp(
+                ip, port, timeout=timeout, local_address=local_address, socket_options=socket_options
+            )
+
+    transport = httpx.HTTPTransport()
+    transport._pool._network_backend = _PinnedBackend()
+    return transport
 
 
 def _default_http_get(url: str) -> bytes:
     import httpx
 
     # Follow redirects manually so every hop is re-validated against the SSRF
-    # guard — an allowed public URL must not be able to bounce us to an
-    # internal one.
+    # guard — an allowed public URL must not be able to bounce us to an internal
+    # one — and re-resolved+pinned so each connection lands on the address we
+    # actually validated.
     current = url
-    with httpx.Client(timeout=10.0, follow_redirects=False) as client:
-        for _ in range(_MAX_REDIRECTS + 1):
-            if not _is_safe_url(current):
-                raise ValueError(f"refusing to fetch unsafe or non-public URL: {current!r}")
+    for _ in range(_MAX_REDIRECTS + 1):
+        ip = _public_ip_or_raise(current)
+        with httpx.Client(
+            timeout=10.0, follow_redirects=False, transport=_pinned_transport(ip)
+        ) as client:
             resp = client.get(current)
-            if resp.is_redirect:
-                location = resp.headers.get("location")
-                if not location:
-                    break
-                current = str(resp.url.join(location))
-                continue
-            resp.raise_for_status()
-            return resp.content
+        if resp.is_redirect:
+            location = resp.headers.get("location")
+            if not location:
+                break
+            current = str(resp.url.join(location))
+            continue
+        resp.raise_for_status()
+        return resp.content
     raise ValueError(f"too many redirects fetching {url!r}")
 
 
