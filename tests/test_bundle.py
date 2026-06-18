@@ -101,6 +101,9 @@ def test_escape_script_neutralizes_closing_tag():
     out = _escape_script("var a = '</script><b>';")
     assert "</script" not in out
     assert "<\\/script" in out
+    # escaping is case-insensitive: an uppercase closer is neutralized too
+    # (without re.IGNORECASE it would pass through unescaped)
+    assert "</script" not in _escape_script("</SCRIPT>").lower()
 
 
 def test_escape_style_neutralizes_closing_tag():
@@ -109,3 +112,5 @@ def test_escape_style_neutralizes_closing_tag():
     out = _escape_style("a{content:'</style>'}")
     assert "</style" not in out
     assert "<\\/style" in out
+    # escaping is case-insensitive: an uppercase closer is neutralized too
+    assert "</style" not in _escape_style("</STYLE>").lower()
