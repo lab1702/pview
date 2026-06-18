@@ -31,3 +31,21 @@ it('the low handle cannot cross the high handle', () => {
   fireEvent.keyDown(lowHandle, { key: 'ArrowRight' })
   expect(onChange).toHaveBeenCalledWith(8, 8) // clamped, cannot exceed high
 })
+
+it('exposes aria-valuetext from formatLabel for screen readers', () => {
+  const onChange = vi.fn()
+  render(
+    <RangeSlider
+      min={0}
+      max={10}
+      low={3}
+      high={7}
+      step={1}
+      onChange={onChange}
+      formatLabel={(v) => `#${v}`}
+    />,
+  )
+  const handles = screen.getAllByRole('slider')
+  expect(handles[0].getAttribute('aria-valuetext')).toBe('#3')
+  expect(handles[1].getAttribute('aria-valuetext')).toBe('#7')
+})
