@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks'
-import { effect } from '@preact/signals'
+import { effect, useSignal } from '@preact/signals'
 import type { Bundle } from '../core/bundle'
 import { gridLayout } from '../core/layout/grid'
 import { histogramLayout } from '../core/layout/histogram'
@@ -8,11 +8,13 @@ import { createViewerState } from './state'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { EmptyState } from './EmptyState'
+import { DetailCard } from './DetailCard'
 
 export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const stateRef = useRef(createViewerState(bundle))
   const state = stateRef.current
+  const focusRect = useSignal({ cx: 0, cy: 0, size: 0, progress: 0 })
 
   useEffect(() => {
     const host = hostRef.current
@@ -20,20 +22,23 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
     const scene = new Scene()
     let disposed = false
     let destroyed = false
-    let disposeEffect: (() => void) | undefined
+    const disposers: Array<() => void> = []
     const teardown = () => {
       if (destroyed) return
       destroyed = true
-      disposeEffect?.()
+      for (const d of disposers) d()
+      window.removeEventListener('keydown', onKey)
       scene.destroy()
     }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') state.selectedId.value = null
+    }
+    window.addEventListener('keydown', onKey)
+
     const columns = Math.max(1, Math.ceil(Math.sqrt(bundle.items.length)))
     const gap = Math.round(bundle.tileSize * 0.08)
     const barGap = Math.round(bundle.tileSize * 0.5)
 
-    // Compute the active layout, push bars to the scene, return targets + bounds + frame center.
-    // Histogram content stacks upward into negative Y, so it needs an explicit
-    // camera center; grid content spans [0,w]×[0,h] and uses the default center.
     const computeLayout = (): {
       targets: Map<number, { x: number; y: number; scale: number }>
       bounds: { w: number; h: number }
@@ -63,19 +68,49 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
         await scene.mount(host)
         if (disposed) return teardown()
         await scene.setSprites(bundle, baseUrl)
+        scene.onSelect = (id) => {
+          state.selectedId.value = id
+        }
+        scene.onFocusRect = (r) => {
+          focusRect.value = r
+        }
         const first = computeLayout()
         scene.setLayout(first.targets, new Set(state.visibleIds.value), false)
         scene.frame(first.bounds, first.center)
         lastMode = `${state.view.value}:${state.histogramFacet.value}`
-        disposeEffect = effect(() => {
-          const r = computeLayout()
-          scene.setLayout(r.targets, new Set(state.visibleIds.value))
-          const mode = `${state.view.value}:${state.histogramFacet.value}`
-          if (mode !== lastMode) {
-            scene.frame(r.bounds, r.center)
-            lastMode = mode
-          }
-        })
+
+        // re-layout on filter/sort/search/view changes; re-frame only on mode change
+        disposers.push(
+          effect(() => {
+            const r = computeLayout()
+            scene.setLayout(r.targets, new Set(state.visibleIds.value))
+            const mode = `${state.view.value}:${state.histogramFacet.value}`
+            if (mode !== lastMode) {
+              scene.frame(r.bounds, r.center)
+              lastMode = mode
+            }
+          }),
+        )
+        // selection -> camera focus / reset
+        disposers.push(
+          effect(() => {
+            const id = state.selectedId.value
+            if (id !== null) scene.focusOn(id)
+            else scene.focusReset()
+          }),
+        )
+        // deselect whenever the layout identity or visible set changes
+        disposers.push(
+          effect(() => {
+            // subscribe to the layout-affecting signals
+            void state.view.value
+            void state.histogramFacet.value
+            void state.filter.value
+            void state.sort.value
+            void state.query.value
+            state.selectedId.value = null
+          }),
+        )
       } catch (err) {
         teardown()
         const div = document.createElement('div')
@@ -90,6 +125,11 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
     }
   }, [bundle, baseUrl])
 
+  const selectedItem =
+    state.selectedId.value !== null
+      ? bundle.items.find((it) => it.id === state.selectedId.value) ?? null
+      : null
+
   return (
     <div class="pview-root">
       <Topbar bundle={bundle} state={state} />
@@ -98,6 +138,14 @@ export function App({ bundle, baseUrl }: { bundle: Bundle; baseUrl: string }) {
         <div class="pview-canvas" ref={hostRef} />
       </div>
       {state.visibleIds.value.size === 0 && <EmptyState onClear={() => state.reset()} />}
+      {selectedItem && (
+        <DetailCard
+          item={selectedItem}
+          baseUrl={baseUrl}
+          rect={focusRect.value}
+          onClose={() => (state.selectedId.value = null)}
+        />
+      )}
     </div>
   )
 }

@@ -24,3 +24,11 @@ html, body, #app { margin: 0; height: 100%; }
 .pview-view-toggle button[aria-pressed='true'] { background: #4a90d9; color: #fff; border-color: #4a90d9; }
 .pview-view-toggle button:disabled { opacity: 0.4; cursor: default; }
 .pview-groupby { display: inline-flex; align-items: center; gap: 4px; }
+.pview-detail { position: absolute; max-height: 80vh; display: flex; flex-direction: column; background: #1b1b1b; border: 1px solid #444; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); overflow: hidden; z-index: 20; }
+.pview-detail-close { position: absolute; top: 6px; right: 8px; background: rgba(0,0,0,0.5); color: #eee; border: none; border-radius: 50%; width: 26px; height: 26px; font-size: 18px; line-height: 1; cursor: pointer; }
+.pview-detail-image img { display: block; width: 100%; height: auto; max-height: 60vh; object-fit: contain; background: #000; }
+.pview-detail-generated { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; color: #fff; font: 600 22px sans-serif; padding: 12px; text-align: center; box-sizing: border-box; }
+.pview-detail-attrs { margin: 0; padding: 10px 14px; overflow-y: auto; }
+.pview-detail-row { display: flex; gap: 8px; padding: 2px 0; font-size: 14px; }
+.pview-detail-row dt { color: #9ad; min-width: 90px; }
+.pview-detail-row dd { margin: 0; color: #eee; }

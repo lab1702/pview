@@ -5,6 +5,7 @@ import {
   panBy,
   zoomAt,
   fitToBounds,
+  lerpCamera,
   MIN_ZOOM,
   MAX_ZOOM,
 } from '../src/scene/camera'
@@ -70,5 +71,17 @@ describe('camera', () => {
   it('clamps zoom to MIN_ZOOM when zooming out past it', () => {
     const next = zoomAt({ x: 0, y: 0, zoom: MIN_ZOOM }, 600, 200, 0.5, vp)
     expect(next.zoom).toBe(MIN_ZOOM)
+  })
+
+  it('lerpCamera interpolates x/y/zoom and clamps t', () => {
+    const a = { x: 0, y: 0, zoom: 1 }
+    const b = { x: 10, y: 20, zoom: 5 }
+    expect(lerpCamera(a, b, 0)).toEqual(a)
+    expect(lerpCamera(a, b, 1)).toEqual(b)
+    const mid = lerpCamera(a, b, 0.5)
+    expect(mid.x).toBeCloseTo(5)
+    expect(mid.y).toBeCloseTo(10)
+    expect(mid.zoom).toBeCloseTo(3)
+    expect(lerpCamera(a, b, 2)).toEqual(b) // clamped
   })
 })
