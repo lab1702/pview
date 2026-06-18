@@ -15,6 +15,7 @@ export class Scene {
   private dragging = false
   private lastX = 0
   private lastY = 0
+  private settled = false
 
   constructor(loadTexture: TextureLoader = (url) => Assets.load(url)) {
     this.loadTexture = loadTexture
@@ -30,6 +31,7 @@ export class Scene {
   }
 
   async setSprites(bundle: Bundle, baseUrl: string): Promise<void> {
+    this.transitions.clear()
     this.sprites = await buildSprites(bundle, this.world, this.loadTexture, baseUrl)
     for (const [id, sp] of this.sprites) {
       this.transitions.register(id, { x: sp.position.x, y: sp.position.y, scale: sp.scale.x, alpha: 1 })
@@ -39,10 +41,12 @@ export class Scene {
   setLayout(targets: Map<number, LayoutTarget>, visible: Set<number>, animate = true): void {
     this.transitions.setTargets(targets, visible)
     if (!animate) this.transitions.snap()
+    this.settled = false
   }
 
   private onTick = (): void => {
-    this.transitions.tick(this.app.ticker.deltaMS)
+    const active = this.transitions.tick(this.app.ticker.deltaMS)
+    if (this.settled && !active) return
     for (const [id, sp] of this.sprites) {
       const s = this.transitions.get(id)
       if (!s) continue
@@ -51,6 +55,7 @@ export class Scene {
       sp.alpha = s.alpha
       sp.visible = s.alpha > 0.01
     }
+    this.settled = !active
   }
 
   frame(bounds: { w: number; h: number }): void {

@@ -73,6 +73,11 @@ export class TransitionController {
     this.elapsed = this.durationMs
   }
 
+  clear(): void {
+    this.entries.clear()
+    this.elapsed = 0
+  }
+
   get(id: number): SpriteState | undefined {
     return this.entries.get(id)?.current
   }
