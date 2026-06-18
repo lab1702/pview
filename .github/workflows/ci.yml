@@ -31,7 +31,14 @@ jobs:
       - run: npm run build
         working-directory: viewer
       # Staleness guard: the committed viewer_assets/ must equal a fresh build.
-      # If minified output ever proves non-deterministic across environments,
-      # relax this to: `test -s src/pview/viewer_assets/app.js` (+ app.css/index.html).
+      # `git status --porcelain` also catches added/removed files (e.g. a new chunk),
+      # which a plain `git diff` would miss. If minified output ever proves
+      # non-deterministic across environments, relax to a presence check:
+      # `test -s src/pview/viewer_assets/app.js` (+ app.css/index.html).
       - name: viewer_assets is up to date
-        run: git diff --exit-code -- src/pview/viewer_assets
+        run: |
+          if [ -n "$(git status --porcelain -- src/pview/viewer_assets)" ]; then
+            echo "viewer_assets is stale — run 'npm run build' in viewer/ and commit the result:"
+            git status --porcelain -- src/pview/viewer_assets
+            exit 1
+          fi
