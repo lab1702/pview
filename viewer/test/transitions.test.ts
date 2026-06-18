@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { it, expect } from 'vitest'
 import { TransitionController, easeInOutCubic } from '../src/scene/transitions'
 
 it('ease is 0 at 0 and 1 at 1', () => {
