@@ -48,4 +48,10 @@ describe('parseBundle', () => {
     delete bad.items
     expect(() => parseBundle(bad)).toThrow(/items/)
   })
+
+  it('throws when atlases is missing', () => {
+    const bad: any = v2bundle()
+    delete bad.atlases
+    expect(() => parseBundle(bad)).toThrow(/atlases/)
+  })
 })

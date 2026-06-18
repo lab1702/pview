@@ -50,6 +50,9 @@ export function parseBundle(json: unknown): Bundle {
   if (!Array.isArray(b.atlases)) {
     throw new Error('pview: bundle is missing an "atlases" array')
   }
+  // Per-item field validation (id/atlas/rect types) is intentionally deferred:
+  // M1 validates bundle structure only. These casts trust pview-generated data;
+  // field-level hardening can come later if untrusted bundles become a concern.
   const items: Item[] = (b.items as Record<string, unknown>[]).map((raw) => ({
     id: raw.id as number,
     values: (raw.values ?? {}) as Record<string, unknown>,
