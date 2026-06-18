@@ -10,10 +10,10 @@ def test_generate_card_is_correct_size_and_mode():
 def test_generate_card_color_is_deterministic_per_id():
     a = generate_card(7, "Ada", [], tile_size=64)
     b = generate_card(7, "Ada", [], tile_size=64)
-    assert list(a.getdata()) == list(b.getdata())
+    assert a.tobytes() == b.tobytes()
 
 
 def test_generate_card_different_ids_differ():
     a = generate_card(1, "Ada", [], tile_size=64)
     b = generate_card(2, "Ada", [], tile_size=64)
-    assert list(a.getdata()) != list(b.getdata())
+    assert a.tobytes() != b.tobytes()
