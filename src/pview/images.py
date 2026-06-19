@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import colorsys
 import hashlib
 import ipaddress
 import socket
@@ -49,27 +48,28 @@ def _default_font_path() -> str:
     return str(resources.files("pview").joinpath("assets/fonts/DejaVuSans.ttf"))
 
 
-# Per-item background palette. MUST stay byte-identical to the viewer's
-# `generatedColor` (viewer/src/core/cardcolor.ts): the same id has to yield the
-# same color in the generated atlas tile (here) and in the detail card (TS), or
-# the two diverge. Keep these three constants in sync across both files.
-_GOLDEN_RATIO_CONJUGATE = 0.61803398875
-_BG_LIGHTNESS = 0.45
-_BG_SATURATION = 0.55
+# Card background. A single fixed light blue fills both generated (no-image)
+# cards and the letterbox/pillarbox margins around non-square images, so every
+# card sits on one consistent field. The hex form is written into the bundle
+# (see bg_hex) so the viewer's detail card reuses the exact color baked into the
+# atlas tile rather than recomputing it (single source of truth lives here).
+CARD_BG_HEX = "#7da0c4"
+_CARD_BG = (0x7D, 0xA0, 0xC4)
 
 
-def _bg_color(item_id: int) -> tuple[int, int, int]:
-    hue = (item_id * _GOLDEN_RATIO_CONJUGATE) % 1.0
-    r, g, b = colorsys.hls_to_rgb(hue, _BG_LIGHTNESS, _BG_SATURATION)
-    return int(r * 255), int(g * 255), int(b * 255)
+def _text_color(bg: tuple[int, int, int]) -> str:
+    # Black or white card text, whichever reads better on the background. Uses the
+    # WCAG relative-luminance formula so the choice stays legible if _CARD_BG ever
+    # changes to a paler or darker shade.
+    r, g, b = (c / 255 for c in bg)
+    lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    return "#1a2332" if lum > 0.55 else "white"
 
 
-def bg_hex(item_id: int) -> str:
-    """The per-item background as a ``#rrggbb`` string. Written into the bundle so
-    the viewer's detail card reuses the exact color baked into the atlas tile,
-    rather than recomputing the palette (the single source of truth lives here)."""
-    r, g, b = _bg_color(item_id)
-    return f"#{r:02x}{g:02x}{b:02x}"
+def bg_hex() -> str:
+    """The fixed card background as a ``#rrggbb`` string. Written into the bundle so
+    the viewer's detail card reuses the exact color baked into the atlas tile."""
+    return CARD_BG_HEX
 
 
 def _truncate(draw: "ImageDraw.ImageDraw", text: str, font, max_width: int) -> str:
@@ -89,8 +89,9 @@ def generate_card(
     font_path: str | None = None,
 ) -> Image.Image:
     font_path = font_path or _default_font_path()
-    img = Image.new("RGBA", (tile_size, tile_size), (*_bg_color(item_id), 255))
+    img = Image.new("RGBA", (tile_size, tile_size), (*_CARD_BG, 255))
     draw = ImageDraw.Draw(img)
+    text_color = _text_color(_CARD_BG)
 
     name_font = ImageFont.truetype(font_path, max(12, tile_size // 9))
     body_font = ImageFont.truetype(font_path, max(9, tile_size // 16))
@@ -98,13 +99,13 @@ def generate_card(
 
     max_width = tile_size - 2 * margin
     line_height = tile_size // 12
-    draw.text((margin, margin), _truncate(draw, str(name), name_font, max_width), fill="white", font=name_font)
+    draw.text((margin, margin), _truncate(draw, str(name), name_font, max_width), fill=text_color, font=name_font)
     y = margin + tile_size // 6
     for label, value in fields:
         if y + line_height > tile_size - margin:
             break
         line = _truncate(draw, f"{label}: {value}", body_font, max_width)
-        draw.text((margin, y), line, fill="white", font=body_font)
+        draw.text((margin, y), line, fill=text_color, font=body_font)
         y += line_height
     return img
 
@@ -243,12 +244,12 @@ def _fetch_url(url: str, cache_dir: Path | None, http_get: Callable[[str], bytes
     return _get_with_retry(url, http_get)
 
 
-def _normalize(img: Image.Image, tile_size: int, item_id: int) -> Image.Image:
+def _normalize(img: Image.Image, tile_size: int) -> Image.Image:
     # Scale to fit the square while preserving aspect ratio (letterbox/pillarbox)
-    # rather than cropping. Uncovered margins use the same per-item background as
+    # rather than cropping. Uncovered margins use the same fixed background as
     # cards with no image, so image and generated cards sit on a consistent field.
     fitted = ImageOps.contain(img.convert("RGBA"), (tile_size, tile_size))
-    tile = Image.new("RGBA", (tile_size, tile_size), (*_bg_color(item_id), 255))
+    tile = Image.new("RGBA", (tile_size, tile_size), (*_CARD_BG, 255))
     offset = ((tile_size - fitted.width) // 2, (tile_size - fitted.height) // 2)
     tile.paste(fitted, offset, fitted)
     return tile
@@ -295,7 +296,7 @@ def load_tile(
                 )
             img.load()
             return LoadedImage(
-                tile=_normalize(img, tile_size, item_id),
+                tile=_normalize(img, tile_size),
                 generated=False,
                 error=None,
                 original=raw,

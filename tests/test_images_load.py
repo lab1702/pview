@@ -39,9 +39,9 @@ def _solid_png(w, h, color):
 
 def test_non_square_image_is_contained_and_letterboxed_with_card_bg(tmp_path):
     # A wide image scaled to fit a square should keep its aspect ratio and be
-    # centered, with the uncovered margins filled by the same per-item bg color
-    # used for cards that have no image.
-    from pview.images import _bg_color
+    # centered, with the uncovered margins filled by the single fixed card bg
+    # color used for cards that have no image.
+    from pview.images import _CARD_BG
 
     p = tmp_path / "wide.png"
     p.write_bytes(_solid_png(16, 8, (200, 30, 40)))  # 2:1 aspect
@@ -50,8 +50,30 @@ def test_non_square_image_is_contained_and_letterboxed_with_card_bg(tmp_path):
     px = r.tile.load()
     # 16x8 contained into 32x32 -> 32x16, centered vertically: rows 8..23 image.
     assert px[16, 16] == (200, 30, 40, 255)        # center is the image
-    assert px[16, 0] == (*_bg_color(5), 255)       # top margin is the card bg
-    assert px[16, 31] == (*_bg_color(5), 255)      # bottom margin is the card bg
+    assert px[16, 0] == (*_CARD_BG, 255)           # top margin is the card bg
+    assert px[16, 31] == (*_CARD_BG, 255)          # bottom margin is the card bg
+
+
+def test_all_cards_share_one_fixed_light_blue_background(tmp_path):
+    # The card background is a single fixed light blue, identical for every item
+    # id, on both no-image cards and the margins of letterboxed images.
+    from pview.images import CARD_BG_HEX, _CARD_BG, bg_hex
+
+    assert CARD_BG_HEX == "#7da0c4"
+    assert bg_hex() == "#7da0c4"
+
+    # No-image cards: a corner pixel is the fixed bg, regardless of id.
+    a = load_tile(None, item_id=1, name="A", fields=[], tile_size=32).tile.load()
+    b = load_tile(None, item_id=999, name="B", fields=[], tile_size=32).tile.load()
+    assert a[0, 0] == (*_CARD_BG, 255)
+    assert b[0, 0] == (*_CARD_BG, 255)
+
+    # Letterbox margins of two different ids match each other and the fixed bg.
+    p = tmp_path / "wide.png"
+    p.write_bytes(_solid_png(16, 8, (200, 30, 40)))
+    m1 = load_tile(str(p), item_id=1, name="A", fields=[], tile_size=32).tile.load()
+    m2 = load_tile(str(p), item_id=2, name="B", fields=[], tile_size=32).tile.load()
+    assert m1[16, 0] == m2[16, 0] == (*_CARD_BG, 255)
 
 
 def test_missing_value_generates_card():
