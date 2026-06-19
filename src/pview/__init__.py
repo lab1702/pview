@@ -100,10 +100,10 @@ def build_with_summary(
             details[pos] = (loaded.original, loaded.ext)
 
         values = {c: _coerce(row[c]) for c in df.columns if c != image_col}
-        # bg_hex(pos) is the same per-item color baked into the tile by
-        # load_tile; emitting it lets the viewer reuse it without reimplementing
-        # the palette (single source of truth in images.py).
-        items.append({"id": pos, "values": values, "color": bg_hex(pos)})
+        # bg_hex() is the fixed card background baked into the tile by load_tile;
+        # emitting it lets the viewer reuse it without hardcoding the color
+        # (single source of truth in images.py).
+        items.append({"id": pos, "values": values, "color": bg_hex()})
 
     atlas_images, placements = pack(tiles, tile_size=tile_size)
     for item, place in zip(items, placements):

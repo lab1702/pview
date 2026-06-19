@@ -70,14 +70,14 @@ def test_missing_name_col_raises(tmp_path):
 
 
 def test_item_color_matches_tile_background(tmp_path):
-    # The bundle's per-item color is the exact background bg_hex bakes into the
-    # tile, so the viewer can reuse it instead of recomputing the palette.
+    # The bundle's color is the exact fixed background bg_hex bakes into every
+    # tile, so the viewer can reuse it instead of hardcoding the color.
     from pview.images import bg_hex
 
     out = build(_df(tmp_path), name_col="name", image_col="photo", out_dir=tmp_path / "site")
     data = json.loads((out / "data.json").read_text())
     for item in data["items"]:
-        assert item["color"] == bg_hex(item["id"])
+        assert item["color"] == bg_hex()
 
 
 def test_duplicate_columns_raise_clear_error(tmp_path):

@@ -13,10 +13,15 @@ def test_generate_card_color_is_deterministic_per_id():
     assert a.tobytes() == b.tobytes()
 
 
-def test_generate_card_different_ids_differ():
+def test_generate_card_background_is_fixed_regardless_of_id():
+    # The card background no longer varies per id: two ids with identical content
+    # produce identical cards, and the background is the fixed light blue.
+    from pview.images import _CARD_BG
+
     a = generate_card(1, "Ada", [], tile_size=64)
     b = generate_card(2, "Ada", [], tile_size=64)
-    assert a.tobytes() != b.tobytes()
+    assert a.tobytes() == b.tobytes()
+    assert a.load()[0, 0] == (*_CARD_BG, 255)
 
 
 def test_generate_card_handles_long_name_without_overflow():
