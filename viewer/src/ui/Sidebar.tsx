@@ -2,9 +2,20 @@ import type { Bundle, Facet } from '../core/bundle'
 import type { ViewerState } from './state'
 import type { CategoryConstraint } from '../core/filter'
 import { RangeSlider } from './RangeSlider'
+import { useState } from 'preact/hooks'
 
 export function Sidebar({ bundle, state }: { bundle: Bundle; state: ViewerState }) {
   const filterable = bundle.facets.filter((f) => f.type !== 'text')
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+
+  const toggleCollapse = (name: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(name)) next.delete(name)
+      else next.add(name)
+      return next
+    })
+  }
 
   const toggleCategory = (name: string, value: string) => {
     const cur = (state.filter.value[name] as CategoryConstraint) ?? new Set<string>()
@@ -27,20 +38,37 @@ export function Sidebar({ bundle, state }: { bundle: Bundle; state: ViewerState 
       <button type="button" class="pview-clear" onClick={() => state.reset()}>
         Clear all
       </button>
-      {filterable.map((f) => (
-        <div class="pview-facet" key={f.name}>
-          <h3>{f.name}</h3>
-          {f.type === 'category' && (
-            <CategoryFilter facet={f} state={state} onToggle={(v) => toggleCategory(f.name, v)} />
-          )}
-          {f.type === 'numeric' && (
-            <NumericFilter facet={f} state={state} onChange={(lo, hi) => setRange(f.name, lo, hi)} />
-          )}
-          {f.type === 'date' && (
-            <DateFilter facet={f} state={state} onChange={(lo, hi) => setRangeStr(f.name, lo, hi)} />
-          )}
-        </div>
-      ))}
+      {filterable.map((f) => {
+        const isOpen = !collapsed.has(f.name)
+        return (
+          <div class="pview-facet" key={f.name}>
+            <button
+              type="button"
+              class="pview-facet-header"
+              aria-expanded={isOpen}
+              onClick={() => toggleCollapse(f.name)}
+            >
+              <span>{f.name}</span>
+              <span class="pview-facet-chev" aria-hidden="true">
+                ▾
+              </span>
+            </button>
+            <div class="pview-facet-body" aria-hidden={isOpen ? undefined : 'true'}>
+              <div>
+                {f.type === 'category' && (
+                  <CategoryFilter facet={f} state={state} onToggle={(v) => toggleCategory(f.name, v)} />
+                )}
+                {f.type === 'numeric' && (
+                  <NumericFilter facet={f} state={state} onChange={(lo, hi) => setRange(f.name, lo, hi)} />
+                )}
+                {f.type === 'date' && (
+                  <DateFilter facet={f} state={state} onChange={(lo, hi) => setRangeStr(f.name, lo, hi)} />
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
