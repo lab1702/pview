@@ -9,3 +9,6 @@ viewer/node_modules/
 viewer/dist/
 viewer/fixtures/
 example/site/
+
+# brainstorming visual companion
+.superpowers/
