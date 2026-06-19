@@ -43,11 +43,14 @@ it('does not render a control for text facets', () => {
 it('collapses and expands a facet when its header is clicked', () => {
   const b = bundle()
   const state = createViewerState(b)
-  render(<Sidebar bundle={b} state={state} />)
+  const { container } = render(<Sidebar bundle={b} state={state} />)
   const header = screen.getByRole('button', { name: 'g' }) // facet "g" header
   expect(header.getAttribute('aria-expanded')).toBe('true')
   fireEvent.click(header)
   expect(header.getAttribute('aria-expanded')).toBe('false')
+  const body = container.querySelector('.pview-facet-body')
+  expect(body!.hasAttribute('inert')).toBe(true)
   fireEvent.click(header)
   expect(header.getAttribute('aria-expanded')).toBe('true')
+  expect(body!.hasAttribute('inert')).toBe(false)
 })

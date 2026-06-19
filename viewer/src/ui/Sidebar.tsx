@@ -53,7 +53,7 @@ export function Sidebar({ bundle, state }: { bundle: Bundle; state: ViewerState 
                 ▾
               </span>
             </button>
-            <div class="pview-facet-body" aria-hidden={isOpen ? undefined : 'true'}>
+            <div class="pview-facet-body" aria-hidden={isOpen ? undefined : 'true'} inert={isOpen ? undefined : true}>
               <div>
                 {f.type === 'category' && (
                   <CategoryFilter facet={f} state={state} onToggle={(v) => toggleCategory(f.name, v)} />
