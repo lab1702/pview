@@ -56,3 +56,24 @@ it('sorts numeric-looking category values numerically, not lexicographically', (
   ]
   expect(sortIds([0, 1, 2], its, 'rank', 'asc', f)).toEqual([1, 2, 0]) // 2, 9, 10
 })
+
+it('sorts numeric null to the end in both directions', () => {
+  const its: Item[] = [
+    { id: 0, values: { age: 30 }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+    { id: 1, values: { age: null }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+    { id: 2, values: { age: 10 }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+  ]
+  expect(sortIds([0, 1, 2], its, 'age', 'asc', facets)).toEqual([2, 0, 1])
+  expect(sortIds([0, 1, 2], its, 'age', 'desc', facets)).toEqual([0, 2, 1])
+})
+
+it('sorts category/date null to the end in both directions', () => {
+  const f: Facet[] = [{ name: 'd', type: 'date', min: '2000-01-01', max: '2030-01-01' }]
+  const its: Item[] = [
+    { id: 0, values: { d: '2010-01-01' }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+    { id: 1, values: { d: null }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+    { id: 2, values: { d: '2005-01-01' }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+  ]
+  expect(sortIds([0, 1, 2], its, 'd', 'asc', f)).toEqual([2, 0, 1])
+  expect(sortIds([0, 1, 2], its, 'd', 'desc', f)).toEqual([0, 2, 1])
+})
