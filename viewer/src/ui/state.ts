@@ -5,6 +5,7 @@ import { matchQuery } from '../core/search'
 import { sortIds, type SortDir } from '../core/sort'
 import { facetedCounts } from '../core/counts'
 import { isBucketable } from '../core/facets'
+import { facetsWithNull } from '../core/nulls'
 
 export interface ViewerState {
   filter: Signal<FilterState>
@@ -16,6 +17,7 @@ export interface ViewerState {
   visibleIds: ReadonlySignal<Set<number>>
   sortedVisible: ReadonlySignal<number[]>
   counts: ReadonlySignal<Map<string, Map<string, number>>>
+  facetsWithNull: Set<string>
   reset: () => void
 }
 
@@ -51,10 +53,12 @@ export function createViewerState(bundle: Bundle): ViewerState {
 
   const counts = computed(() => facetedCounts(bundle.items, bundle.facets, filter.value))
 
+  const withNull = facetsWithNull(bundle.items, bundle.facets)
+
   const reset = () => {
     filter.value = {}
     query.value = ''
   }
 
-  return { filter, sort, query, view, histogramFacet, selectedId, visibleIds, sortedVisible, counts, reset }
+  return { filter, sort, query, view, histogramFacet, selectedId, visibleIds, sortedVisible, counts, facetsWithNull: withNull, reset }
 }
