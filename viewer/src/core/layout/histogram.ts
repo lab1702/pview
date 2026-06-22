@@ -1,5 +1,6 @@
 import type { Facet, Item } from '../bundle'
 import { computeBuckets, bucketIndexOf } from '../buckets'
+import { isMissingFor } from '../nulls'
 import type { LayoutTarget } from './grid'
 
 export interface HistogramResult {
@@ -18,16 +19,16 @@ export function histogramLayout(
   const { tileSize, gap, barGap } = opts
 
   let barLabels: string[]
-  let indexOf: (value: unknown) => number
+  let presentIndexOf: (value: unknown) => number
 
   if (facet.type === 'category') {
     barLabels = [...facet.values]
     const lut = new Map(facet.values.map((v, i) => [v, i]))
-    indexOf = (value) => lut.get(String(value)) ?? -1
+    presentIndexOf = (value) => lut.get(String(value)) ?? -1
   } else if (facet.type === 'numeric') {
     const { edges, labels } = computeBuckets(facet.min, facet.max)
     barLabels = labels
-    indexOf = (value) => {
+    presentIndexOf = (value) => {
       const v = Number(value)
       return Number.isNaN(v) ? -1 : bucketIndexOf(v, edges)
     }
@@ -35,14 +36,24 @@ export function histogramLayout(
     const fmt = opts.dateFormat ?? ((ms: number) => new Date(ms).toISOString().slice(0, 10))
     const { edges } = computeBuckets(Date.parse(facet.min), Date.parse(facet.max))
     barLabels = edges.slice(0, -1).map((e) => fmt(e))
-    indexOf = (value) => {
+    presentIndexOf = (value) => {
       const v = Date.parse(String(value))
       return Number.isNaN(v) ? -1 : bucketIndexOf(v, edges)
     }
   } else {
     barLabels = []
-    indexOf = () => -1
+    presentIndexOf = () => -1
   }
+
+  // Append a trailing "null" bucket when this facet has any missing value, so
+  // missing items get their own rightmost bar instead of being dropped (or, for
+  // numeric, silently coerced into the 0-bucket since Number(null) === 0).
+  const hasNull =
+    facet.type !== 'text' && items.some((it) => isMissingFor(facet.type, it.values[facet.name]))
+  const nullIndex = hasNull ? barLabels.length : -1
+  if (hasNull) barLabels = [...barLabels, 'null']
+  const indexOf = (value: unknown): number =>
+    isMissingFor(facet.type, value) ? nullIndex : presentIndexOf(value)
 
   const nBars = barLabels.length
   const heights = new Array<number>(nBars).fill(0)
