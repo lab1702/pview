@@ -29,8 +29,8 @@ it('renders a checkbox per category value with counts and toggles the filter', (
   render(<Sidebar bundle={b} state={state} />)
   const checkbox = screen.getByLabelText(/a \(1\)/) // value "a", count 1
   fireEvent.click(checkbox)
-  const constraint = state.filter.value['g'] as Set<string>
-  expect(constraint.has('a')).toBe(true)
+  const constraint = state.filter.value['g'] as { values: Set<string> }
+  expect(constraint.values.has('a')).toBe(true)
 })
 
 it('does not render a control for text facets', () => {

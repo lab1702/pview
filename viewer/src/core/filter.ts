@@ -1,7 +1,7 @@
 import type { Facet, Item } from './bundle'
 import { isMissingFor } from './nulls'
 
-export type CategoryConstraint = Set<string>
+export type CategoryConstraint = { values: Set<string>; includeNull?: boolean }
 export type RangeConstraint =
   | { min: number; max: number; includeNull?: boolean }
   | { min: string; max: string; includeNull?: boolean }
@@ -34,9 +34,11 @@ function passes(item: Item, byName: Map<string, Facet>, state: FilterState): boo
 export function passesConstraint(item: Item, facet: Facet, constraint: Constraint): boolean {
   const value = item.values[facet.name]
   if (facet.type === 'category') {
-    const set = constraint as CategoryConstraint
-    if (set.size === 0) return true
-    return set.has(String(value))
+    const { values, includeNull } = constraint as CategoryConstraint
+    // No active selection => no constraint; everything passes (incl. nulls).
+    if (values.size === 0 && includeNull !== true) return true
+    if (isMissingFor('category', value)) return includeNull === true
+    return values.has(String(value))
   }
   if (facet.type === 'numeric') {
     const { min, max, includeNull } = constraint as { min: number; max: number; includeNull?: boolean }

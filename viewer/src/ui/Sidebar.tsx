@@ -18,11 +18,11 @@ export function Sidebar({ bundle, state }: { bundle: Bundle; state: ViewerState 
   }
 
   const toggleCategory = (name: string, value: string) => {
-    const cur = (state.filter.value[name] as CategoryConstraint) ?? new Set<string>()
-    const next = new Set(cur)
+    const cur = (state.filter.value[name] as CategoryConstraint | undefined) ?? { values: new Set<string>() }
+    const next = new Set(cur.values)
     if (next.has(value)) next.delete(value)
     else next.add(value)
-    state.filter.value = { ...state.filter.value, [name]: next }
+    state.filter.value = { ...state.filter.value, [name]: { values: next, includeNull: cur.includeNull } }
   }
 
   const setRange = (name: string, low: number, high: number) => {
@@ -83,7 +83,8 @@ function CategoryFilter({
   onToggle: (value: string) => void
 }) {
   const counts = state.counts.value.get(facet.name)
-  const selected = (state.filter.value[facet.name] as Set<string>) ?? new Set<string>()
+  const c = state.filter.value[facet.name] as CategoryConstraint | undefined
+  const selected = c?.values ?? new Set<string>()
   return (
     <ul class="pview-checkboxes">
       {facet.values.map((v) => (
