@@ -12,8 +12,11 @@ atlases, and writes a self-contained bundle you can open in any browser.
 The bundle ships with an interactive viewer baked in: open `index.html` and you
 get filterable facets, a sorted grid, a histogram view, search, a detail pane,
 and animated transitions that keep the whole collection centered and framed as
-you filter and sort. See [`docs/superpowers/specs`](docs/superpowers/specs) for
-the design.
+you filter and sort. Items with no value for a facet are handled gracefully:
+each numeric/date/category filter has a control to include or exclude them
+(included by default), the histogram collects them in a trailing `null` bucket,
+and they sort to the end. See [`docs/superpowers/specs`](docs/superpowers/specs)
+for the design.
 
 ## Install
 
@@ -94,7 +97,7 @@ card, and the columns infer as numeric/date/category facets. See
 
 | Stage | What it does |
 |-------|--------------|
-| **Facet inference** | Classifies each column as `numeric`, `date`, `category`, or `text` (override with `facets=` / `--facet col=type`). |
+| **Facet inference** | Classifies each column as `numeric`, `date`, `category`, or `text` (override with `facets=` / `--facet col=type`). Missing values (and `±inf`) are dropped from numeric/date ranges and category value lists; a column with no usable values degrades to `text`. |
 | **Image acquisition** | Loads each item's image from a local path or `http(s)` URL (guarded and size-capped — see [Security](#security); retried once), then scales it to fit a fixed square tile while preserving aspect ratio — uncovered margins use the item's background color; falls back to a generated card on missing/blank/failed/oversized images — a bad image never aborts a build. |
 | **Card generation** | Renders the name plus selected attributes onto a tile with a deterministic, per-item background color (the same color used for image margins). |
 | **Atlas packing** | Packs the fixed-size tiles into atlas sheets for efficient GPU rendering. |
