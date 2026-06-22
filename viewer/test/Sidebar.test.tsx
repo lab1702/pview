@@ -78,7 +78,7 @@ it('shows an "Include items with no value" checkbox only for numeric facets with
   expect(labels.length).toBe(1) // only `age`
 })
 
-it('toggling the numeric null checkbox sets includeNull on the constraint', () => {
+it('numeric null checkbox is checked by default and toggling it off sets includeNull false', () => {
   const b: Bundle = {
     version: 2, title: '', tileSize: 256,
     cardFields: [], atlases: [],
@@ -88,11 +88,12 @@ it('toggling the numeric null checkbox sets includeNull on the constraint', () =
   const state = createViewerState(b)
   render(<Sidebar bundle={b} state={state} />)
   const cb = screen.getByLabelText(/Include items with no value/i) as HTMLInputElement
+  expect(cb.checked).toBe(true) // nulls included by default
   fireEvent.click(cb)
-  expect((state.filter.value['age'] as { includeNull?: boolean }).includeNull).toBe(true)
+  expect((state.filter.value['age'] as { includeNull?: boolean }).includeNull).toBe(false)
 })
 
-it('shows a "(no value)" row for category facets with nulls and toggles includeNull', () => {
+it('category "(no value)" row is checked by default and toggling it off sets includeNull false', () => {
   const b: Bundle = {
     version: 2, title: '', tileSize: 256,
     cardFields: [], atlases: [],
@@ -102,6 +103,7 @@ it('shows a "(no value)" row for category facets with nulls and toggles includeN
   const state = createViewerState(b)
   render(<Sidebar bundle={b} state={state} />)
   const cb = screen.getByLabelText(/\(no value\)/i) as HTMLInputElement
+  expect(cb.checked).toBe(true) // nulls included by default
   fireEvent.click(cb)
-  expect((state.filter.value['g'] as { includeNull?: boolean }).includeNull).toBe(true)
+  expect((state.filter.value['g'] as { includeNull?: boolean }).includeNull).toBe(false)
 })

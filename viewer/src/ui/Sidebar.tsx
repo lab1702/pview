@@ -40,15 +40,16 @@ export function Sidebar({ bundle, state }: { bundle: Bundle; state: ViewerState 
     const cur = state.filter.value[name] as RangeConstraint | undefined
     const min = cur?.min ?? fullMin
     const max = cur?.max ?? fullMax
-    // The cast is needed because min/max are typed number|string here (one
-    // helper serves both numeric and date facets); each call site passes a
-    // consistent pair, matching one arm of the RangeConstraint union.
-    state.filter.value = { ...state.filter.value, [name]: { min, max, includeNull: !cur?.includeNull } as RangeConstraint }
+    // Nulls are included by default, so the toggle flips to the explicit
+    // `false` opt-out and back. The cast is needed because min/max are typed
+    // number|string here (one helper serves both numeric and date facets);
+    // each call site passes a consistent pair matching one RangeConstraint arm.
+    state.filter.value = { ...state.filter.value, [name]: { min, max, includeNull: cur?.includeNull === false } as RangeConstraint }
   }
 
   const toggleCategoryNull = (name: string) => {
     const cur = (state.filter.value[name] as CategoryConstraint | undefined) ?? { values: new Set<string>() }
-    state.filter.value = { ...state.filter.value, [name]: { values: cur.values, includeNull: !cur.includeNull } }
+    state.filter.value = { ...state.filter.value, [name]: { values: cur.values, includeNull: cur.includeNull === false } }
   }
 
   return (
@@ -138,7 +139,7 @@ function CategoryFilter({
       {hasNull && (
         <li key="__pview_null__">
           <label>
-            <input type="checkbox" checked={c?.includeNull ?? false} onChange={onToggleNull} />
+            <input type="checkbox" checked={c?.includeNull !== false} onChange={onToggleNull} />
             (no value) ({counts?.get(NULL_KEY) ?? 0})
           </label>
         </li>
@@ -168,7 +169,7 @@ function NumericFilter({
       <RangeSlider min={facet.min} max={facet.max} low={low} high={high} onChange={onChange} />
       {hasNull && (
         <label class="pview-null-toggle">
-          <input type="checkbox" checked={c?.includeNull ?? false} onChange={onToggleNull} />
+          <input type="checkbox" checked={c?.includeNull !== false} onChange={onToggleNull} />
           Include items with no value
         </label>
       )}
@@ -210,7 +211,7 @@ function DateFilter({
       />
       {hasNull && (
         <label class="pview-null-toggle">
-          <input type="checkbox" checked={c?.includeNull ?? false} onChange={onToggleNull} />
+          <input type="checkbox" checked={c?.includeNull !== false} onChange={onToggleNull} />
           Include items with no value
         </label>
       )}
