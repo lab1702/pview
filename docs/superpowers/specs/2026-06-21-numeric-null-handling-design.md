@@ -42,10 +42,12 @@ existing `items` data.
 
 ## Design decisions
 
-- **Filter default:** when a facet has an *active* constraint (range narrowed,
-  or one or more categories selected), nulls are **excluded** by default; the
-  user opts them back in. With no active constraint nothing is filtered and all
-  items (including nulls) show — unchanged.
+- **Filter default:** nulls are **included** by default, even under an active
+  constraint (range narrowed, or one or more categories selected); the user opts
+  them *out* via the null control. `includeNull: false` is the explicit opt-out;
+  absent/true means include. With no active constraint nothing is filtered and
+  all items (including nulls) show. *(Updated 2026-06-21: the default was flipped
+  from exclude to include after initial implementation.)*
 - **Null bucket position:** **last** (rightmost), after the real buckets.
 - **Visibility:** the null control and the null bucket appear **only when the
   facet actually has null values**.
@@ -88,21 +90,23 @@ type CategoryConstraint = { values: Set<string>; includeNull?: boolean }
 
 **`passesConstraint`:**
 
-- Numeric / date: `if (isMissing(value) || value === '') return constraint.includeNull === true` (range check below unchanged).
-- Category: a missing item passes iff `constraint.includeNull === true`; a
+- Numeric / date: `if (isMissing(value) || value === '') return constraint.includeNull !== false` (range check below unchanged).
+- Category: a missing item passes iff `constraint.includeNull !== false`; a
   present item passes iff `values.size === 0 || values.has(String(value))`. The
-  "all pass when nothing selected" convention is preserved.
+  "all pass when nothing selected" convention is preserved (a constraint is
+  active when `values.size > 0 || includeNull === false`).
 
 **Sidebar UI:**
 
 - *Numeric / date* — when the facet is in `facetsWithNull`, render a checkbox
-  **"Include items with no value"** beneath the slider, default **unchecked**.
-  Toggling writes `includeNull` onto the constraint, creating a full-range
-  constraint if none exists. The slider's `onChange` preserves the current
-  `includeNull` when it writes min/max.
+  **"Include items with no value"** beneath the slider, default **checked**.
+  Toggling writes `includeNull` onto the constraint (flipping to the explicit
+  `false` opt-out and back), creating a full-range constraint if none exists.
+  The slider's `onChange` preserves the current `includeNull` when it writes
+  min/max.
 - *Category* — when the facet is in `facetsWithNull`, append a **"(no value)"**
-  checkbox to the value list (with its own count, below). Checking it sets
-  `includeNull: true`. Reads/writes go through the new object shape; existing
+  checkbox to the value list (with its own count, below), default **checked**.
+  Unchecking it sets `includeNull: false`. Reads/writes go through the new object shape; existing
   value toggles update `constraint.values`.
 
 Resulting semantics (uniform across all three types):
@@ -110,8 +114,8 @@ Resulting semantics (uniform across all three types):
 | State | Behavior |
 |-------|----------|
 | No active constraint | Nothing filtered; all items show (incl. nulls) |
-| Active constraint, null control off | Nulls excluded (today's behavior) |
-| Active constraint, null control on | In-range / selected items **and** nulls |
+| Active constraint, null control on (default) | In-range / selected items **and** nulls |
+| Active constraint, null control off | Nulls excluded (`includeNull: false`) |
 
 **Counts** (`core/counts.ts`). The category-count map gains a synthetic entry
 for the "(no value)" row when the facet has nulls. Use a reserved sentinel key
@@ -157,9 +161,9 @@ change.
 
 ## Testing
 
-- `filter.test.ts` — for numeric, date, and category: null excluded by default
-  under an active constraint; included when the null control is on; unaffected
-  when no constraint.
+- `filter.test.ts` — for numeric, date, and category: null included by default
+  under an active constraint; excluded when the null control is turned off
+  (`includeNull: false`); unaffected when no constraint.
 - `counts.test.ts` — category counts reflect the null control; the `NULL_KEY`
   row reports the right count; consistency with the filter.
 - `histogram.test.ts` — null items land in the `null` bucket for all three types
