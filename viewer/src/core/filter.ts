@@ -1,7 +1,10 @@
 import type { Facet, Item } from './bundle'
+import { isMissingFor } from './nulls'
 
-export type CategoryConstraint = Set<string>
-export type RangeConstraint = { min: number; max: number } | { min: string; max: string }
+export type CategoryConstraint = { values: Set<string>; includeNull?: boolean }
+export type RangeConstraint =
+  | { min: number; max: number; includeNull?: boolean }
+  | { min: string; max: string; includeNull?: boolean }
 export type Constraint = CategoryConstraint | RangeConstraint
 export type FilterState = Record<string, Constraint | undefined>
 
@@ -25,29 +28,31 @@ function passes(item: Item, byName: Map<string, Facet>, state: FilterState): boo
   return true
 }
 
-/** Whether a single facet's constraint admits this item. An empty category set
- *  (and text facets) impose no constraint. Shared by applyFilters and the
- *  faceted-count pass so both agree on what "passes" means. */
+/** Whether a single facet's constraint admits this item. An inactive category
+ *  constraint (no values selected and includeNull unset) and text facets impose
+ *  no constraint. Shared by applyFilters and the faceted-count pass so both
+ *  agree on what "passes" means. */
 export function passesConstraint(item: Item, facet: Facet, constraint: Constraint): boolean {
   const value = item.values[facet.name]
   if (facet.type === 'category') {
-    const set = constraint as CategoryConstraint
-    if (set.size === 0) return true
-    return set.has(String(value))
+    const { values, includeNull } = constraint as CategoryConstraint
+    // No active selection => no constraint; everything passes (incl. nulls).
+    if (values.size === 0 && includeNull !== true) return true
+    if (isMissingFor('category', value)) return includeNull === true
+    return values.has(String(value))
   }
   if (facet.type === 'numeric') {
-    const { min, max } = constraint as { min: number; max: number }
-    // An item lacking a value for this facet does not satisfy a range
-    // constraint. Reject it explicitly: Number(null)/Number('') are 0, which
-    // would otherwise let a missing value slip through whenever 0 is in range.
-    if (value === null || value === undefined || value === '') return false
+    const { min, max, includeNull } = constraint as { min: number; max: number; includeNull?: boolean }
+    // A missing value satisfies the range only when the user opted in. Note
+    // Number(null)/Number('') are 0, so the explicit missing check must come
+    // before the numeric coercion below.
+    if (isMissingFor('numeric', value)) return includeNull === true
     const v = Number(value)
     return !(Number.isNaN(v) || v < min || v > max)
   }
   if (facet.type === 'date') {
-    const { min, max } = constraint as { min: string; max: string }
-    // Likewise, a missing date does not satisfy a date-range constraint.
-    if (value === null || value === undefined || value === '') return false
+    const { min, max, includeNull } = constraint as { min: string; max: string; includeNull?: boolean }
+    if (isMissingFor('date', value)) return includeNull === true
     const v = String(value)
     return !(v < min || v > max)
   }

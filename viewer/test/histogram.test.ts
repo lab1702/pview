@@ -55,3 +55,34 @@ it('buckets a date facet (Date.parse + ms bucketing)', () => {
   expect(r.targets.has(0)).toBe(true)
   expect(r.targets.has(1)).toBe(true)
 })
+
+it('numeric facet with nulls gets a trailing "null" bar', () => {
+  const numFacet: Facet = { name: 'n', type: 'numeric', min: 0, max: 30 }
+  const its: Item[] = [item(0, { n: 5 }), item(1, { n: null }), item(2, { n: 25 })]
+  const r = histogramLayout([0, 1, 2], its, numFacet, opts)
+  expect(r.bars[r.bars.length - 1].label).toBe('null')
+  expect(r.bars[r.bars.length - 1].count).toBe(1) // only id 1
+  expect(r.targets.has(1)).toBe(true)
+})
+
+it('no "null" bar when a numeric facet has no missing values', () => {
+  const numFacet: Facet = { name: 'n', type: 'numeric', min: 0, max: 30 }
+  const r = histogramLayout([0, 1, 2], items, numFacet, opts)
+  expect(r.bars.some((b) => b.label === 'null')).toBe(false)
+})
+
+it('date facet with nulls gets a trailing "null" bar', () => {
+  const dateFacet: Facet = { name: 'd', type: 'date', min: '2010-01-01', max: '2012-01-01' }
+  const its: Item[] = [item(0, { d: '2010-06-01' }), item(1, { d: null })]
+  const r = histogramLayout([0, 1], its, dateFacet, opts)
+  expect(r.bars[r.bars.length - 1].label).toBe('null')
+  expect(r.bars[r.bars.length - 1].count).toBe(1)
+})
+
+it('category facet with nulls gets a trailing "null" bar', () => {
+  const f: Facet = { name: 'g', type: 'category', values: ['a', 'b'] }
+  const its: Item[] = [item(0, { g: 'a' }), item(1, { g: null }), item(2, { g: 'b' })]
+  const r = histogramLayout([0, 1, 2], its, f, opts)
+  expect(r.bars.map((b) => b.label)).toEqual(['a', 'b', 'null'])
+  expect(r.bars.map((b) => b.count)).toEqual([1, 1, 1])
+})

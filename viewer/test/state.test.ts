@@ -25,7 +25,7 @@ function bundle(): Bundle {
 it('visibleIds reflects filters', () => {
   const s = createViewerState(bundle())
   expect(s.visibleIds.value.size).toBe(3)
-  s.filter.value = { g: new Set(['a']) }
+  s.filter.value = { g: { values: new Set(['a']) } }
   expect([...s.visibleIds.value].sort()).toEqual([0, 2])
 })
 
@@ -43,13 +43,13 @@ it('sortedVisible applies sort', () => {
 
 it('counts reflect other filters but not own facet', () => {
   const s = createViewerState(bundle())
-  s.filter.value = { g: new Set(['a']) }
+  s.filter.value = { g: { values: new Set(['a']) } }
   expect(s.counts.value.get('g')).toEqual(new Map([['a', 2], ['b', 1]]))
 })
 
 it('reset clears filter and query', () => {
   const s = createViewerState(bundle())
-  s.filter.value = { g: new Set(['a']) }
+  s.filter.value = { g: { values: new Set(['a']) } }
   s.query.value = 'x'
   s.reset()
   expect(s.filter.value).toEqual({})

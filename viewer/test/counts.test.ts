@@ -1,6 +1,7 @@
 import { it, expect } from 'vitest'
 import { facetedCounts } from '../src/core/counts'
 import type { Facet, Item } from '../src/core/bundle'
+import { NULL_KEY } from '../src/core/nulls'
 
 const facets: Facet[] = [
   { name: 'g', type: 'category', values: ['a', 'b'] },
@@ -20,7 +21,7 @@ it('counts all values with an empty filter', () => {
 it("excludes a facet's own constraint from its counts", () => {
   // selecting g=a: g's own counts ignore that constraint (still a:2, b:1),
   // but c's counts reflect g=a -> x:1, y:1
-  const state = { g: new Set(['a']) }
+  const state = { g: { values: new Set(['a']) } }
   const counts = facetedCounts(items, facets, state)
   expect(counts.get('g')).toEqual(new Map([['a', 2], ['b', 1]]))
   expect(counts.get('c')).toEqual(new Map([['x', 1], ['y', 1]]))
@@ -42,10 +43,26 @@ it('reflects constraints on other facet types (numeric) in category counts', () 
 it('counts toward a facet items that fail only that facet (two category constraints)', () => {
   // Constrain both g and c. Item 1 (g=a,c=y) fails only c=x, so it should be
   // counted in c's relaxed counts but not g's.
-  const state = { g: new Set(['a']), c: new Set(['x']) }
+  const state = { g: { values: new Set(['a']) }, c: { values: new Set(['x']) } }
   const counts = facetedCounts(items, facets, state)
   // g relaxed: items passing c=x are 0 (a,x) and 2 (b,x) -> a:1, b:1
   expect(counts.get('g')).toEqual(new Map([['a', 1], ['b', 1]]))
   // c relaxed: items passing g=a are 0 (x) and 1 (y) -> x:1, y:1
   expect(counts.get('c')).toEqual(new Map([['x', 1], ['y', 1]]))
+})
+
+it('counts missing category values under NULL_KEY when present', () => {
+  const f: Facet[] = [{ name: 'g', type: 'category', values: ['a', 'b'] }]
+  const its: Item[] = [
+    { id: 0, values: { g: 'a' }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+    { id: 1, values: { g: null }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+    { id: 2, values: { g: null }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+  ]
+  const counts = facetedCounts(its, f, {})
+  expect(counts.get('g')).toEqual(new Map([['a', 1], ['b', 0], [NULL_KEY, 2]]))
+})
+
+it('omits NULL_KEY for a category facet with no missing values', () => {
+  const counts = facetedCounts(items, facets, {})
+  expect(counts.get('g')!.has(NULL_KEY)).toBe(false)
 })

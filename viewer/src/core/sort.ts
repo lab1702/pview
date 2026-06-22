@@ -14,18 +14,17 @@ export function sortIds(
   const byId = new Map(items.map((it) => [it.id, it]))
   const sign = dir === 'desc' ? -1 : 1
   const numeric = facet?.type === 'numeric'
+  // A value is "bad" if missing (null/undefined/'') or, for numeric facets,
+  // non-numeric. Bad values sort to the end in BOTH directions, so `sign` is
+  // not applied to the bad-value branch. Number(null) === 0, so the explicit
+  // null/'' check is required — NaN detection alone would sort nulls as 0.
+  const bad = (x: unknown): boolean =>
+    x === null || x === undefined || x === '' || (numeric && Number.isNaN(Number(x)))
   const cmp = (a: unknown, b: unknown): number => {
-    if (numeric) {
-      // A missing/non-numeric value coerces to NaN; `NaN - x` is NaN, and a
-      // comparator returning NaN leaves Array.sort order undefined. Sort such
-      // values to the end regardless of direction instead.
-      const na = Number(a)
-      const nb = Number(b)
-      const aBad = Number.isNaN(na)
-      const bBad = Number.isNaN(nb)
-      if (aBad || bBad) return aBad && bBad ? 0 : aBad ? 1 : -1
-      return sign * (na - nb)
-    }
+    const aBad = bad(a)
+    const bBad = bad(b)
+    if (aBad || bBad) return aBad && bBad ? 0 : aBad ? 1 : -1
+    if (numeric) return sign * (Number(a) - Number(b))
     // numeric:true so "2" sorts before "10" rather than lexicographically.
     return sign * String(a).localeCompare(String(b), undefined, { numeric: true })
   }

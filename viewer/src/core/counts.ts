@@ -1,5 +1,6 @@
 import type { Facet, Item } from './bundle'
 import { passesConstraint, type Constraint, type FilterState } from './filter'
+import { isMissingFor, NULL_KEY } from './nulls'
 
 /** Per-category-facet value counts under the current filter, where each facet's
  *  own constraint is excluded from its own counts (so toggling a value doesn't
@@ -26,13 +27,15 @@ export function facetedCounts(
 
   const result = new Map<string, Map<string, number>>()
   for (const f of categoryFacets) {
-    result.set(f.name, new Map((f.values as string[]).map((v) => [v, 0])))
+    const m = new Map<string, number>((f.values as string[]).map((v) => [v, 0]))
+    if (items.some((it) => isMissingFor('category', it.values[f.name]))) m.set(NULL_KEY, 0)
+    result.set(f.name, m)
   }
 
   const bump = (facetName: string, value: unknown) => {
     const counts = result.get(facetName)
     if (!counts) return
-    const key = String(value)
+    const key = isMissingFor('category', value) ? NULL_KEY : String(value)
     if (counts.has(key)) counts.set(key, counts.get(key)! + 1)
   }
 
