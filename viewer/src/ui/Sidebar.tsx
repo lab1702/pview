@@ -40,6 +40,9 @@ export function Sidebar({ bundle, state }: { bundle: Bundle; state: ViewerState 
     const cur = state.filter.value[name] as RangeConstraint | undefined
     const min = cur?.min ?? fullMin
     const max = cur?.max ?? fullMax
+    // The cast is needed because min/max are typed number|string here (one
+    // helper serves both numeric and date facets); each call site passes a
+    // consistent pair, matching one arm of the RangeConstraint union.
     state.filter.value = { ...state.filter.value, [name]: { min, max, includeNull: !cur?.includeNull } as RangeConstraint }
   }
 
@@ -192,7 +195,6 @@ function DateFilter({
   const minMs = toMs(facet.min)
   const maxMs = toMs(facet.max)
   const c = state.filter.value[facet.name] as { min: string; max: string; includeNull?: boolean } | undefined
-  const cc = state.filter.value[facet.name] as { includeNull?: boolean } | undefined
   const lowMs = c ? toMs(c.min) : minMs
   const highMs = c ? toMs(c.max) : maxMs
   return (
@@ -208,7 +210,7 @@ function DateFilter({
       />
       {hasNull && (
         <label class="pview-null-toggle">
-          <input type="checkbox" checked={cc?.includeNull ?? false} onChange={onToggleNull} />
+          <input type="checkbox" checked={c?.includeNull ?? false} onChange={onToggleNull} />
           Include items with no value
         </label>
       )}

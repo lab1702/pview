@@ -28,9 +28,10 @@ function passes(item: Item, byName: Map<string, Facet>, state: FilterState): boo
   return true
 }
 
-/** Whether a single facet's constraint admits this item. An empty category set
- *  (and text facets) impose no constraint. Shared by applyFilters and the
- *  faceted-count pass so both agree on what "passes" means. */
+/** Whether a single facet's constraint admits this item. An inactive category
+ *  constraint (no values selected and includeNull unset) and text facets impose
+ *  no constraint. Shared by applyFilters and the faceted-count pass so both
+ *  agree on what "passes" means. */
 export function passesConstraint(item: Item, facet: Facet, constraint: Constraint): boolean {
   const value = item.values[facet.name]
   if (facet.type === 'category') {
