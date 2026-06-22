@@ -141,6 +141,11 @@ html, body, #app { margin: 0; height: 100%; }
 .pview-checkboxes label { display: flex; gap: 8px; align-items: center; padding: 3px 0; font-size: 13px; color: var(--text-dim); }
 .pview-checkboxes input { accent-color: var(--accent); }
 
+/* "Include items with no value" toggle under a range slider — matches the
+   category checkbox rows, with a little separation from the slider above. */
+.pview-null-toggle { display: flex; gap: 8px; align-items: center; margin-top: 6px; padding: 3px 0; font-size: 13px; color: var(--text-dim); }
+.pview-null-toggle input { accent-color: var(--accent); }
+
 /* Range slider */
 .pview-range { padding: 6px 4px; }
 .pview-range-track {
