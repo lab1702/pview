@@ -1,6 +1,7 @@
 import { it, expect } from 'vitest'
 import { facetedCounts } from '../src/core/counts'
 import type { Facet, Item } from '../src/core/bundle'
+import { NULL_KEY } from '../src/core/nulls'
 
 const facets: Facet[] = [
   { name: 'g', type: 'category', values: ['a', 'b'] },
@@ -48,4 +49,20 @@ it('counts toward a facet items that fail only that facet (two category constrai
   expect(counts.get('g')).toEqual(new Map([['a', 1], ['b', 1]]))
   // c relaxed: items passing g=a are 0 (x) and 1 (y) -> x:1, y:1
   expect(counts.get('c')).toEqual(new Map([['x', 1], ['y', 1]]))
+})
+
+it('counts missing category values under NULL_KEY when present', () => {
+  const f: Facet[] = [{ name: 'g', type: 'category', values: ['a', 'b'] }]
+  const its: Item[] = [
+    { id: 0, values: { g: 'a' }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+    { id: 1, values: { g: null }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+    { id: 2, values: { g: null }, atlas: 0, rect: [0, 0, 1, 1], detail: null },
+  ]
+  const counts = facetedCounts(its, f, {})
+  expect(counts.get('g')).toEqual(new Map([['a', 1], ['b', 0], [NULL_KEY, 2]]))
+})
+
+it('omits NULL_KEY for a category facet with no missing values', () => {
+  const counts = facetedCounts(items, facets, {})
+  expect(counts.get('g')!.has(NULL_KEY)).toBe(false)
 })
